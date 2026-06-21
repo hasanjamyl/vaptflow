@@ -84,13 +84,6 @@
             width: 100vw;
         }
 
-        .workspace-layout {
-            display: grid;
-            grid-template-columns: 320px 1fr 380px;
-            height: calc(100vh - 56px);
-            overflow: hidden;
-        }
-
         /* Utility Classes */
         .glass-panel {
             background: rgba(17, 24, 39, 0.95);
@@ -154,42 +147,58 @@
     <div class="app-layout">
         <!-- Top Bar -->
         <header class="glass-panel border-b border-app-border flex items-center justify-between px-4 z-50">
-            <div class="flex items-center space-x-6">
+            <div class="flex items-center space-x-3 md:space-x-6">
+                <button id="btn-toggle-left" class="lg:hidden text-white p-1 hover:bg-gray-800 rounded">
+                    <i class="ph ph-list text-2xl"></i>
+                </button>
                 <div class="flex items-center space-x-2 text-app-accent">
                     <i class="ph-fill ph-shield-check text-2xl"></i>
-                    <span class="font-bold text-lg tracking-wide text-white">VaptFlow</span>
+                    <span class="font-bold text-lg tracking-wide text-white hidden sm:inline">VaptFlow</span>
                 </div>
-                <div class="h-6 w-px bg-app-border"></div>
-                <div class="flex items-center space-x-2 text-sm">
+                <div class="h-6 w-px bg-app-border hidden sm:block"></div>
+                <div class="hidden sm:flex items-center space-x-2 text-sm">
                     <span class="text-app-textMuted">Workspace:</span>
-                    <span class="font-medium px-2 py-1 bg-app-border rounded text-white" id="header-workspace-name">Default Environment</span>
+                    <span class="font-medium px-2 py-1 bg-app-border rounded text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-[150px]" id="header-workspace-name">Default Env</span>
                 </div>
             </div>
 
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2 md:space-x-4">
                 <!-- API Key Management -->
-                <div class="flex items-center space-x-2 bg-app-bg px-3 py-1.5 rounded-lg border border-app-border">
-                    <i class="ph ph-key text-app-textMuted"></i>
-                    <input type="password" id="api-key-input" placeholder="Enter Gemini API key" 
-                        class="bg-transparent border-none outline-none text-sm w-48 text-white placeholder-app-textMuted focus:ring-0">
-                    <div id="api-status-indicator" class="w-2 h-2 rounded-full bg-red-500 mx-2" title="Key not set"></div>
-                    <button id="btn-save-key" class="text-xs font-medium text-app-accent hover:text-app-accentHover transition-colors px-2 border-r border-app-border">Save</button>
-                    <button id="btn-clear-key" class="text-xs font-medium text-app-textMuted hover:text-white transition-colors pl-2">Clear</button>
+                <div class="flex items-center space-x-1 md:space-x-2 bg-app-bg px-2 md:px-3 py-1.5 rounded-lg border border-app-border">
+                    <i class="ph ph-key text-app-textMuted hidden sm:block"></i>
+                    <input type="password" id="api-key-input" placeholder="API key" 
+                        class="bg-transparent border-none outline-none text-xs md:text-sm w-20 sm:w-32 md:w-48 text-white placeholder-app-textMuted focus:ring-0">
+                    <div id="api-status-indicator" class="w-2 h-2 rounded-full bg-red-500 mx-1 md:mx-2" title="Key not set"></div>
+                    <button id="btn-save-key" class="text-xs font-medium text-app-accent hover:text-app-accentHover transition-colors px-1 md:px-2 border-r border-app-border">Save</button>
+                    <button id="btn-clear-key" class="text-xs font-medium text-app-textMuted hover:text-white transition-colors pl-1 md:pl-2">Clear</button>
                 </div>
                 
-                <button class="w-8 h-8 rounded-full bg-app-border flex items-center justify-center hover:bg-gray-700 transition-colors">
+                <button class="hidden sm:flex w-8 h-8 rounded-full bg-app-border items-center justify-center hover:bg-gray-700 transition-colors">
                     <i class="ph ph-user text-white"></i>
+                </button>
+
+                <button id="btn-toggle-right" class="xl:hidden text-white p-1 hover:bg-gray-800 rounded relative">
+                    <i class="ph ph-chat-teardrop-text text-2xl"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-app-accent rounded-full border border-app-panel"></span>
                 </button>
             </div>
         </header>
 
         <!-- Main Workspace Grid -->
-        <div class="workspace-layout">
+        <div class="flex h-[calc(100vh-56px)] overflow-hidden relative w-full">
             
+            <!-- Mobile Overlay -->
+            <div id="mobile-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 hidden transition-opacity duration-300"></div>
+
             <!-- Left Sidebar: Document Workspace -->
-            <aside class="glass-panel border-r border-app-border flex flex-col h-full overflow-hidden">
+            <aside id="left-sidebar" class="glass-panel border-r border-app-border flex flex-col h-full overflow-hidden absolute z-40 w-80 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 shadow-2xl lg:shadow-none bg-app-panel/95 lg:bg-transparent">
                 <div class="p-4 border-b border-app-border">
-                    <h2 class="text-sm font-semibold uppercase tracking-wider text-app-textMuted mb-3">Document Workspace</h2>
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-sm font-semibold uppercase tracking-wider text-app-textMuted">Document Workspace</h2>
+                        <button id="btn-close-left" class="lg:hidden text-app-textMuted hover:text-white">
+                            <i class="ph ph-x text-lg"></i>
+                        </button>
+                    </div>
                     
                     <!-- Upload Zone -->
                     <div id="dropzone" class="border-2 border-dashed border-app-border rounded-xl p-4 text-center cursor-pointer hover:border-app-textMuted transition-colors group bg-app-bg">
@@ -265,17 +274,17 @@
             </aside>
 
             <!-- Center Pane: Main Content -->
-            <main class="flex flex-col bg-app-bg h-full overflow-hidden relative">
+            <main class="flex flex-col bg-app-bg h-full overflow-hidden relative flex-1 min-w-0">
                 
                 <!-- Center Header -->
-                <header class="h-14 border-b border-app-border flex items-center justify-between px-6 bg-app-panel shrink-0">
-                    <div class="flex items-center gap-4">
-                        <h1 id="center-title" class="text-lg font-semibold text-white">Workspace Pending Initialization</h1>
-                        <span id="center-badge" class="px-2.5 py-1 rounded-full text-xs font-medium bg-app-border text-app-textMuted hidden"></span>
+                <header class="h-14 border-b border-app-border flex items-center justify-between px-4 sm:px-6 bg-app-panel shrink-0">
+                    <div class="flex items-center gap-2 sm:gap-4 truncate">
+                        <h1 id="center-title" class="text-base sm:text-lg font-semibold text-white truncate">Workspace Pending Initialization</h1>
+                        <span id="center-badge" class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium bg-app-border text-app-textMuted hidden shrink-0"></span>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <span id="analysis-status-text" class="text-xs font-medium text-app-textMuted hidden">Engine Idle</span>
-                        <div id="analysis-progress-bar" class="w-32 h-1.5 bg-app-border rounded-full overflow-hidden hidden">
+                    <div class="flex items-center gap-3 shrink-0">
+                        <span id="analysis-status-text" class="text-xs font-medium text-app-textMuted hidden sm:inline-block">Engine Idle</span>
+                        <div id="analysis-progress-bar" class="w-20 sm:w-32 h-1.5 bg-app-border rounded-full overflow-hidden hidden">
                             <div class="h-full bg-app-accent w-0 transition-all duration-300" id="progress-fill"></div>
                         </div>
                     </div>
@@ -398,21 +407,21 @@
                     </section>
 
                     <!-- Tracker View -->
-                    <section id="view-tracker" class="view-section p-6">
-                        <div class="flex justify-between items-center mb-6">
+                    <section id="view-tracker" class="view-section p-4 sm:p-6">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                             <h2 class="text-xl font-semibold text-white">Action Item Board</h2>
-                            <div class="flex gap-2">
-                                <button class="bg-[#0052CC] hover:bg-[#0047b3] text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors">
+                            <div class="flex gap-2 w-full sm:w-auto">
+                                <button class="flex-1 sm:flex-none bg-[#0052CC] hover:bg-[#0047b3] text-white px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors">
                                     <i class="ph ph-kanban"></i> Push to Jira
                                 </button>
-                                <button class="bg-app-panel border border-app-border hover:bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors">
-                                    <i class="ph ph-file-xls"></i> Export XLSX
+                                <button class="flex-1 sm:flex-none bg-app-panel border border-app-border hover:bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors">
+                                    <i class="ph ph-file-xls"></i> Export
                                 </button>
                             </div>
                         </div>
-                        <div class="grid grid-cols-3 gap-6 h-[calc(100%-4rem)]">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 h-auto lg:h-[calc(100%-4rem)] overflow-y-auto lg:overflow-hidden pb-8 lg:pb-0">
                             <!-- To Do -->
-                            <div class="bg-app-panel border border-app-border rounded-xl flex flex-col">
+                            <div class="bg-app-panel border border-app-border rounded-xl flex flex-col min-h-[350px]">
                                 <div class="p-3 border-b border-app-border flex justify-between items-center">
                                     <h3 class="font-medium text-white text-sm">Open Actions</h3>
                                     <span class="bg-app-border text-xs px-2 py-0.5 rounded-full" id="count-todo">0</span>
@@ -422,7 +431,7 @@
                                 </div>
                             </div>
                             <!-- In Progress -->
-                            <div class="bg-app-panel border border-app-border rounded-xl flex flex-col">
+                            <div class="bg-app-panel border border-app-border rounded-xl flex flex-col min-h-[350px]">
                                 <div class="p-3 border-b border-app-border flex justify-between items-center">
                                     <h3 class="font-medium text-white text-sm">In Remediation</h3>
                                     <span class="bg-app-border text-xs px-2 py-0.5 rounded-full" id="count-inprogress">0</span>
@@ -430,7 +439,7 @@
                                 <div class="p-3 flex-1 overflow-y-auto space-y-3" id="board-inprogress"></div>
                             </div>
                             <!-- Verify -->
-                            <div class="bg-app-panel border border-app-border rounded-xl flex flex-col">
+                            <div class="bg-app-panel border border-app-border rounded-xl flex flex-col min-h-[350px]">
                                 <div class="p-3 border-b border-app-border flex justify-between items-center">
                                     <h3 class="font-medium text-white text-sm">Pending Verification</h3>
                                     <span class="bg-app-border text-xs px-2 py-0.5 rounded-full" id="count-verify">0</span>
@@ -444,9 +453,12 @@
             </main>
 
             <!-- Right Sidebar: AI Chat Panel -->
-            <aside class="glass-panel border-l border-app-border flex flex-col h-full bg-app-panel/50">
+            <aside id="right-sidebar" class="glass-panel border-l border-app-border flex flex-col h-full absolute z-40 right-0 w-full sm:w-[380px] transform translate-x-full xl:relative xl:translate-x-0 transition-transform duration-300 shadow-2xl xl:shadow-none bg-app-panel/95 xl:bg-app-panel/50">
                 <header class="p-4 border-b border-app-border flex items-center justify-between">
                     <div class="flex items-center gap-2">
+                        <button id="btn-close-right" class="xl:hidden text-app-textMuted hover:text-white mr-2">
+                            <i class="ph ph-arrow-right text-lg"></i>
+                        </button>
                         <div class="w-6 h-6 rounded bg-app-accent/20 flex items-center justify-center">
                             <i class="ph-fill ph-sparkle text-app-accent"></i>
                         </div>
@@ -608,6 +620,7 @@
             init: () => {
                 UI.updateKeyStatus();
                 UI.attachEventListeners();
+                UI.setupMobileMenu();
                 
                 // Pre-populate tables so the views have data when navigated to instantly
                 AppState.findings = SecurityDataFactory.generateFindings();
@@ -683,6 +696,41 @@
                 // Modal Close
                 document.getElementById('close-modal').addEventListener('click', () => {
                     document.getElementById('vuln-modal').classList.add('hidden');
+                });
+            },
+
+            setupMobileMenu: () => {
+                const leftSidebar = document.getElementById('left-sidebar');
+                const rightSidebar = document.getElementById('right-sidebar');
+                const overlay = document.getElementById('mobile-overlay');
+
+                const closeAll = () => {
+                    leftSidebar.classList.add('-translate-x-full');
+                    rightSidebar.classList.add('translate-x-full');
+                    overlay.classList.add('hidden');
+                };
+
+                document.getElementById('btn-toggle-left').addEventListener('click', () => {
+                    leftSidebar.classList.remove('-translate-x-full');
+                    rightSidebar.classList.add('translate-x-full');
+                    overlay.classList.remove('hidden');
+                });
+
+                document.getElementById('btn-toggle-right').addEventListener('click', () => {
+                    rightSidebar.classList.remove('translate-x-full');
+                    leftSidebar.classList.add('-translate-x-full');
+                    overlay.classList.remove('hidden');
+                });
+
+                document.getElementById('btn-close-left')?.addEventListener('click', closeAll);
+                document.getElementById('btn-close-right')?.addEventListener('click', closeAll);
+                overlay.addEventListener('click', closeAll);
+
+                // Auto close left sidebar on mobile when navigating
+                document.querySelectorAll('.nav-item').forEach(el => {
+                    el.addEventListener('click', () => {
+                        if (window.innerWidth < 1024) closeAll();
+                    });
                 });
             },
 
