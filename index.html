@@ -53,6 +53,9 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
 
+    <!-- SheetJS for XLSX processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <style>
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
@@ -82,6 +85,13 @@
             grid-template-rows: 56px 1fr;
             height: 100vh;
             width: 100vw;
+        }
+
+        .workspace-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr 380px;
+            height: calc(100vh - 56px);
+            overflow: hidden;
         }
 
         /* Utility Classes */
@@ -147,65 +157,49 @@
     <div class="app-layout">
         <!-- Top Bar -->
         <header class="glass-panel border-b border-app-border flex items-center justify-between px-4 z-50">
-            <div class="flex items-center space-x-3 md:space-x-6">
-                <button id="btn-toggle-left" class="lg:hidden text-white p-1 hover:bg-gray-800 rounded">
-                    <i class="ph ph-list text-2xl"></i>
-                </button>
+            <div class="flex items-center space-x-6">
                 <div class="flex items-center space-x-2 text-app-accent">
                     <i class="ph-fill ph-shield-check text-2xl"></i>
-                    <span class="font-bold text-lg tracking-wide text-white hidden sm:inline">VaptFlow</span>
+                    <span class="font-bold text-lg tracking-wide text-white">VaptFlow</span>
                 </div>
-                <div class="h-6 w-px bg-app-border hidden sm:block"></div>
-                <div class="hidden sm:flex items-center space-x-2 text-sm">
+                <div class="h-6 w-px bg-app-border"></div>
+                <div class="flex items-center space-x-2 text-sm">
                     <span class="text-app-textMuted">Workspace:</span>
-                    <span class="font-medium px-2 py-1 bg-app-border rounded text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-[150px]" id="header-workspace-name">Default Env</span>
+                    <span class="font-medium px-2 py-1 bg-app-border rounded text-white" id="header-workspace-name">Default Environment</span>
                 </div>
             </div>
 
-            <div class="flex items-center space-x-2 md:space-x-4">
+            <div class="flex items-center space-x-4">
                 <!-- API Key Management -->
-                <div class="flex items-center space-x-1 md:space-x-2 bg-app-bg px-2 md:px-3 py-1.5 rounded-lg border border-app-border">
-                    <i class="ph ph-key text-app-textMuted hidden sm:block"></i>
-                    <input type="password" id="api-key-input" placeholder="API key" 
-                        class="bg-transparent border-none outline-none text-xs md:text-sm w-20 sm:w-32 md:w-48 text-white placeholder-app-textMuted focus:ring-0">
-                    <div id="api-status-indicator" class="w-2 h-2 rounded-full bg-red-500 mx-1 md:mx-2" title="Key not set"></div>
-                    <button id="btn-save-key" class="text-xs font-medium text-app-accent hover:text-app-accentHover transition-colors px-1 md:px-2 border-r border-app-border">Save</button>
-                    <button id="btn-clear-key" class="text-xs font-medium text-app-textMuted hover:text-white transition-colors pl-1 md:pl-2">Clear</button>
+                <div class="flex items-center space-x-2 bg-app-bg px-3 py-1.5 rounded-lg border border-app-border">
+                    <i class="ph ph-key text-app-textMuted"></i>
+                    <input type="password" id="api-key-input" placeholder="Enter Gemini API key" 
+                        class="bg-transparent border-none outline-none text-sm w-48 text-white placeholder-app-textMuted focus:ring-0">
+                    <div id="api-status-indicator" class="w-2 h-2 rounded-full bg-red-500 mx-2" title="Key not set"></div>
+                    <button id="btn-save-key" class="text-xs font-medium text-app-accent hover:text-app-accentHover transition-colors px-2 border-r border-app-border">Save</button>
+                    <button id="btn-clear-key" class="text-xs font-medium text-app-textMuted hover:text-white transition-colors pl-2">Clear</button>
                 </div>
                 
-                <button class="hidden sm:flex w-8 h-8 rounded-full bg-app-border items-center justify-center hover:bg-gray-700 transition-colors">
+                <button class="w-8 h-8 rounded-full bg-app-border flex items-center justify-center hover:bg-gray-700 transition-colors">
                     <i class="ph ph-user text-white"></i>
-                </button>
-
-                <button id="btn-toggle-right" class="xl:hidden text-white p-1 hover:bg-gray-800 rounded relative">
-                    <i class="ph ph-chat-teardrop-text text-2xl"></i>
-                    <span class="absolute top-1 right-1 w-2 h-2 bg-app-accent rounded-full border border-app-panel"></span>
                 </button>
             </div>
         </header>
 
         <!-- Main Workspace Grid -->
-        <div class="flex h-[calc(100vh-56px)] overflow-hidden relative w-full">
+        <div class="workspace-layout">
             
-            <!-- Mobile Overlay -->
-            <div id="mobile-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 hidden transition-opacity duration-300"></div>
-
             <!-- Left Sidebar: Document Workspace -->
-            <aside id="left-sidebar" class="glass-panel border-r border-app-border flex flex-col h-full overflow-hidden absolute z-40 w-80 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 shadow-2xl lg:shadow-none bg-app-panel/95 lg:bg-transparent">
+            <aside class="glass-panel border-r border-app-border flex flex-col h-full overflow-hidden">
                 <div class="p-4 border-b border-app-border">
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="text-sm font-semibold uppercase tracking-wider text-app-textMuted">Document Workspace</h2>
-                        <button id="btn-close-left" class="lg:hidden text-app-textMuted hover:text-white">
-                            <i class="ph ph-x text-lg"></i>
-                        </button>
-                    </div>
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-app-textMuted mb-3">Document Workspace</h2>
                     
                     <!-- Upload Zone -->
                     <div id="dropzone" class="border-2 border-dashed border-app-border rounded-xl p-4 text-center cursor-pointer hover:border-app-textMuted transition-colors group bg-app-bg">
                         <input type="file" id="file-upload" class="hidden" accept=".pdf,.html,.csv,.xml,.json,.docx,.xlsx,.txt,.md">
                         <i class="ph ph-cloud-arrow-up text-3xl text-app-textMuted group-hover:text-white transition-colors mb-2"></i>
                         <p class="text-sm font-medium text-white mb-1">Upload Report</p>
-                        <p class="text-xs text-app-textMuted">PDF, XML, JSON, CSV, MD</p>
+                        <p class="text-xs text-app-textMuted">PDF, XLSX, CSV, JSON, XML, MD</p>
                     </div>
                 </div>
 
@@ -274,17 +268,17 @@
             </aside>
 
             <!-- Center Pane: Main Content -->
-            <main class="flex flex-col bg-app-bg h-full overflow-hidden relative flex-1 min-w-0">
+            <main class="flex flex-col bg-app-bg h-full overflow-hidden relative">
                 
                 <!-- Center Header -->
-                <header class="h-14 border-b border-app-border flex items-center justify-between px-4 sm:px-6 bg-app-panel shrink-0">
-                    <div class="flex items-center gap-2 sm:gap-4 truncate">
-                        <h1 id="center-title" class="text-base sm:text-lg font-semibold text-white truncate">Workspace Pending Initialization</h1>
-                        <span id="center-badge" class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium bg-app-border text-app-textMuted hidden shrink-0"></span>
+                <header class="h-14 border-b border-app-border flex items-center justify-between px-6 bg-app-panel shrink-0">
+                    <div class="flex items-center gap-4">
+                        <h1 id="center-title" class="text-lg font-semibold text-white">Workspace Pending Initialization</h1>
+                        <span id="center-badge" class="px-2.5 py-1 rounded-full text-xs font-medium bg-app-border text-app-textMuted hidden"></span>
                     </div>
-                    <div class="flex items-center gap-3 shrink-0">
-                        <span id="analysis-status-text" class="text-xs font-medium text-app-textMuted hidden sm:inline-block">Engine Idle</span>
-                        <div id="analysis-progress-bar" class="w-20 sm:w-32 h-1.5 bg-app-border rounded-full overflow-hidden hidden">
+                    <div class="flex items-center gap-3">
+                        <span id="analysis-status-text" class="text-xs font-medium text-app-textMuted hidden">Engine Idle</span>
+                        <div id="analysis-progress-bar" class="w-32 h-1.5 bg-app-border rounded-full overflow-hidden hidden">
                             <div class="h-full bg-app-accent w-0 transition-all duration-300" id="progress-fill"></div>
                         </div>
                     </div>
@@ -407,44 +401,46 @@
                     </section>
 
                     <!-- Tracker View -->
-                    <section id="view-tracker" class="view-section p-4 sm:p-6">
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                            <h2 class="text-xl font-semibold text-white">Action Item Board</h2>
-                            <div class="flex gap-2 w-full sm:w-auto">
-                                <button class="flex-1 sm:flex-none bg-[#0052CC] hover:bg-[#0047b3] text-white px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors">
-                                    <i class="ph ph-kanban"></i> Push to Jira
-                                </button>
-                                <button class="flex-1 sm:flex-none bg-app-panel border border-app-border hover:bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors">
-                                    <i class="ph ph-file-xls"></i> Export
-                                </button>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 h-auto lg:h-[calc(100%-4rem)] overflow-y-auto lg:overflow-hidden pb-8 lg:pb-0">
-                            <!-- To Do -->
-                            <div class="bg-app-panel border border-app-border rounded-xl flex flex-col min-h-[350px]">
-                                <div class="p-3 border-b border-app-border flex justify-between items-center">
-                                    <h3 class="font-medium text-white text-sm">Open Actions</h3>
-                                    <span class="bg-app-border text-xs px-2 py-0.5 rounded-full" id="count-todo">0</span>
-                                </div>
-                                <div class="p-3 flex-1 overflow-y-auto space-y-3" id="board-todo">
-                                    <!-- Populated JS -->
+                    <section id="view-tracker" class="view-section p-6">
+                        <div class="h-full flex flex-col">
+                            <div class="flex justify-between items-center mb-6 shrink-0">
+                                <h2 class="text-xl font-semibold text-white">Action Item Board</h2>
+                                <div class="flex gap-2">
+                                    <button class="bg-[#0052CC] hover:bg-[#0047b3] text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors">
+                                        <i class="ph ph-kanban"></i> Push to Jira
+                                    </button>
+                                    <button class="bg-app-panel border border-app-border hover:bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors">
+                                        <i class="ph ph-file-xls"></i> Export XLSX
+                                    </button>
                                 </div>
                             </div>
-                            <!-- In Progress -->
-                            <div class="bg-app-panel border border-app-border rounded-xl flex flex-col min-h-[350px]">
-                                <div class="p-3 border-b border-app-border flex justify-between items-center">
-                                    <h3 class="font-medium text-white text-sm">In Remediation</h3>
-                                    <span class="bg-app-border text-xs px-2 py-0.5 rounded-full" id="count-inprogress">0</span>
+                            <div class="grid grid-cols-3 gap-6 flex-1 min-h-0 pb-2">
+                                <!-- To Do -->
+                                <div class="bg-app-panel border border-app-border rounded-xl flex flex-col overflow-hidden">
+                                    <div class="p-3 border-b border-app-border flex justify-between items-center shrink-0">
+                                        <h3 class="font-medium text-white text-sm">Open Actions</h3>
+                                        <span class="bg-app-border text-xs px-2 py-0.5 rounded-full" id="count-todo">0</span>
+                                    </div>
+                                    <div class="p-3 flex-1 overflow-y-auto space-y-3" id="board-todo">
+                                        <!-- Populated JS -->
+                                    </div>
                                 </div>
-                                <div class="p-3 flex-1 overflow-y-auto space-y-3" id="board-inprogress"></div>
-                            </div>
-                            <!-- Verify -->
-                            <div class="bg-app-panel border border-app-border rounded-xl flex flex-col min-h-[350px]">
-                                <div class="p-3 border-b border-app-border flex justify-between items-center">
-                                    <h3 class="font-medium text-white text-sm">Pending Verification</h3>
-                                    <span class="bg-app-border text-xs px-2 py-0.5 rounded-full" id="count-verify">0</span>
+                                <!-- In Progress -->
+                                <div class="bg-app-panel border border-app-border rounded-xl flex flex-col overflow-hidden">
+                                    <div class="p-3 border-b border-app-border flex justify-between items-center shrink-0">
+                                        <h3 class="font-medium text-white text-sm">In Remediation</h3>
+                                        <span class="bg-app-border text-xs px-2 py-0.5 rounded-full" id="count-inprogress">0</span>
+                                    </div>
+                                    <div class="p-3 flex-1 overflow-y-auto space-y-3" id="board-inprogress"></div>
                                 </div>
-                                <div class="p-3 flex-1 overflow-y-auto space-y-3" id="board-verify"></div>
+                                <!-- Verify -->
+                                <div class="bg-app-panel border border-app-border rounded-xl flex flex-col overflow-hidden">
+                                    <div class="p-3 border-b border-app-border flex justify-between items-center shrink-0">
+                                        <h3 class="font-medium text-white text-sm">Pending Verification</h3>
+                                        <span class="bg-app-border text-xs px-2 py-0.5 rounded-full" id="count-verify">0</span>
+                                    </div>
+                                    <div class="p-3 flex-1 overflow-y-auto space-y-3" id="board-verify"></div>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -453,12 +449,9 @@
             </main>
 
             <!-- Right Sidebar: AI Chat Panel -->
-            <aside id="right-sidebar" class="glass-panel border-l border-app-border flex flex-col h-full absolute z-40 right-0 w-full sm:w-[380px] transform translate-x-full xl:relative xl:translate-x-0 transition-transform duration-300 shadow-2xl xl:shadow-none bg-app-panel/95 xl:bg-app-panel/50">
+            <aside class="glass-panel border-l border-app-border flex flex-col h-full bg-app-panel/50">
                 <header class="p-4 border-b border-app-border flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <button id="btn-close-right" class="xl:hidden text-app-textMuted hover:text-white mr-2">
-                            <i class="ph ph-arrow-right text-lg"></i>
-                        </button>
                         <div class="w-6 h-6 rounded bg-app-accent/20 flex items-center justify-center">
                             <i class="ph-fill ph-sparkle text-app-accent"></i>
                         </div>
@@ -556,61 +549,11 @@
             currentFile: null,
             fileURL: null,
             fileType: null,
+            documentText: '', // Holds the extracted text to send to Gemini
+            reportData: null, // Holds the parsed JSON returned from Gemini
             status: 'idle', // idle, loaded, analyzing, analyzed
             currentView: 'empty',
             findings: []
-        };
-
-        /**
-         * Synthetic Data Generation (Heuristic extraction simulation)
-         * Guarantees realistic UI population without requiring backend.
-         */
-        const SecurityDataFactory = {
-            generateFindings: (count = 12) => {
-                const severities = ['Critical', 'High', 'High', 'Medium', 'Medium', 'Medium', 'Low', 'Low'];
-                const titles = [
-                    "SQL Injection in Login Authentication Parameter",
-                    "Unauthenticated Remote Code Execution via Deserialization",
-                    "Cross-Site Scripting (XSS) - Reflected",
-                    "Outdated Apache Struts Component",
-                    "Default Credentials on Management Interface",
-                    "Server-Side Request Forgery (SSRF) in Webhook Handler",
-                    "Insecure Direct Object Reference (IDOR) on User Profile",
-                    "TLS 1.0/1.1 Protocol Supported",
-                    "Missing Security HTTP Headers",
-                    "Directory Traversal in Document Retrieval",
-                    "XML External Entity (XXE) Processing",
-                    "Insufficient Logging and Monitoring"
-                ];
-                const assets = ['api.production.internal', 'auth.gateway.local', '10.0.5.44', 'app.webserver.ext', 'db-cluster-01'];
-                const cves = ['CVE-2023-23397', 'CVE-2021-44228', 'CVE-2024-21626', 'N/A', 'CVE-2022-22965'];
-                
-                let results = [];
-                for (let i = 0; i < count; i++) {
-                    const sev = severities[Math.floor(Math.random() * severities.length)];
-                    let cvss = 0.0;
-                    if(sev==='Critical') cvss = (9.0 + Math.random() * 1.0).toFixed(1);
-                    else if(sev==='High') cvss = (7.0 + Math.random() * 1.9).toFixed(1);
-                    else if(sev==='Medium') cvss = (4.0 + Math.random() * 2.9).toFixed(1);
-                    else cvss = (0.1 + Math.random() * 3.8).toFixed(1);
-
-                    results.push({
-                        id: `VF-${Math.floor(1000 + Math.random() * 9000)}`,
-                        title: titles[i % titles.length],
-                        severity: sev,
-                        cvss: cvss,
-                        asset: assets[Math.floor(Math.random() * assets.length)],
-                        port: [80, 443, 8080, 8443, 22, 3306][Math.floor(Math.random() * 6)],
-                        cve: cves[Math.floor(Math.random() * cves.length)],
-                        status: i < 2 ? 'In Progress' : 'Open',
-                        desc: "The application fails to properly sanitize user-supplied input before interpreting it. This allows an attacker to manipulate the execution flow, potentially leading to unauthorized access, data exfiltration, or system compromise.",
-                        remediation: "Implement strict input validation using allow-lists. Utilize parameterized queries (Prepared Statements) for database interactions. Ensure proper output encoding based on the context (e.g., HTML entity encoding) before reflecting data to the browser."
-                    });
-                }
-                // Sort by severity
-                const sevMap = { 'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1 };
-                return results.sort((a, b) => sevMap[b.severity] - sevMap[a.severity]);
-            }
         };
 
         /**
@@ -620,11 +563,8 @@
             init: () => {
                 UI.updateKeyStatus();
                 UI.attachEventListeners();
-                UI.setupMobileMenu();
-                
-                // Pre-populate tables so the views have data when navigated to instantly
-                AppState.findings = SecurityDataFactory.generateFindings();
-                UI.populateTables();
+                // Ensure initial state is clear
+                AppState.findings = [];
             },
 
             attachEventListeners: () => {
@@ -699,41 +639,6 @@
                 });
             },
 
-            setupMobileMenu: () => {
-                const leftSidebar = document.getElementById('left-sidebar');
-                const rightSidebar = document.getElementById('right-sidebar');
-                const overlay = document.getElementById('mobile-overlay');
-
-                const closeAll = () => {
-                    leftSidebar.classList.add('-translate-x-full');
-                    rightSidebar.classList.add('translate-x-full');
-                    overlay.classList.add('hidden');
-                };
-
-                document.getElementById('btn-toggle-left').addEventListener('click', () => {
-                    leftSidebar.classList.remove('-translate-x-full');
-                    rightSidebar.classList.add('translate-x-full');
-                    overlay.classList.remove('hidden');
-                });
-
-                document.getElementById('btn-toggle-right').addEventListener('click', () => {
-                    rightSidebar.classList.remove('translate-x-full');
-                    leftSidebar.classList.add('-translate-x-full');
-                    overlay.classList.remove('hidden');
-                });
-
-                document.getElementById('btn-close-left')?.addEventListener('click', closeAll);
-                document.getElementById('btn-close-right')?.addEventListener('click', closeAll);
-                overlay.addEventListener('click', closeAll);
-
-                // Auto close left sidebar on mobile when navigating
-                document.querySelectorAll('.nav-item').forEach(el => {
-                    el.addEventListener('click', () => {
-                        if (window.innerWidth < 1024) closeAll();
-                    });
-                });
-            },
-
             updateKeyStatus: () => {
                 const indicator = document.getElementById('api-status-indicator');
                 const chatInput = document.getElementById('chat-input');
@@ -777,7 +682,6 @@
                     targetNav.classList.remove('text-app-textMuted');
                     targetNav.classList.add('bg-app-border/50', 'text-white', 'active');
                     
-                    // Update Center Header Text
                     document.getElementById('center-title').innerText = targetNav.innerText.trim();
                 }
             },
@@ -799,20 +703,19 @@
                 
                 AppState.findings.forEach(f => {
                     const sevClasses = UI.getSeverityColors(f.severity);
-                    
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-app-border/30 transition-colors cursor-pointer";
                     tr.onclick = () => UI.openModal(f);
 
                     tr.innerHTML = `
-                        <td class="p-3 text-sm font-mono text-white whitespace-nowrap">${f.id}</td>
-                        <td class="p-3 text-sm font-medium text-white">${f.title}</td>
+                        <td class="p-3 text-sm font-mono text-white whitespace-nowrap">${f.id || 'N/A'}</td>
+                        <td class="p-3 text-sm font-medium text-white">${f.title || 'Untitled'}</td>
                         <td class="p-3 whitespace-nowrap">
-                            <span class="px-2 py-1 text-xs font-bold uppercase rounded border ${sevClasses}">${f.severity}</span>
+                            <span class="px-2 py-1 text-xs font-bold uppercase rounded border ${sevClasses}">${f.severity || 'Info'}</span>
                         </td>
-                        <td class="p-3 text-sm text-gray-300 font-mono">${f.cvss}</td>
-                        <td class="p-3 text-sm text-gray-300 font-mono">${f.asset}:${f.port}</td>
-                        <td class="p-3 text-sm text-app-accent font-mono">${f.cve}</td>
+                        <td class="p-3 text-sm text-gray-300 font-mono">${f.cvss || 'N/A'}</td>
+                        <td class="p-3 text-sm text-gray-300 font-mono">${f.asset || 'N/A'}:${f.port || ''}</td>
+                        <td class="p-3 text-sm text-app-accent font-mono">${f.cve || 'N/A'}</td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -825,76 +728,76 @@
             },
 
             openModal: (finding) => {
-                document.getElementById('modal-title').innerText = finding.title;
-                document.getElementById('modal-id').innerText = finding.id;
-                document.getElementById('modal-asset').innerText = `${finding.asset}:${finding.port}`;
-                document.getElementById('modal-cvss').innerText = finding.cvss;
-                document.getElementById('modal-cve').innerText = finding.cve;
-                document.getElementById('modal-desc').innerText = finding.desc;
-                document.getElementById('modal-remediation').innerText = finding.remediation;
+                document.getElementById('modal-title').innerText = finding.title || 'Finding Detail';
+                document.getElementById('modal-id').innerText = finding.id || 'N/A';
+                document.getElementById('modal-asset').innerText = `${finding.asset || 'N/A'}:${finding.port || ''}`;
+                document.getElementById('modal-cvss').innerText = finding.cvss || 'N/A';
+                document.getElementById('modal-cve').innerText = finding.cve || 'N/A';
+                document.getElementById('modal-desc').innerText = finding.desc || 'No description provided.';
+                document.getElementById('modal-remediation').innerText = finding.remediation || 'No remediation provided.';
 
                 const badge = document.getElementById('modal-severity-badge');
-                badge.innerText = finding.severity;
+                badge.innerText = finding.severity || 'Informational';
                 badge.className = `px-2.5 py-1 text-xs font-bold uppercase rounded border ${UI.getSeverityColors(finding.severity)}`;
 
                 document.getElementById('vuln-modal').classList.remove('hidden');
             },
 
             populateRemediation: () => {
-                const html = `
-                    <div class="bg-app-panel border border-app-border rounded-xl p-5 mb-4">
-                        <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2"><i class="ph-fill ph-warning-circle text-red-500"></i> Immediate Action Required (Phase 1)</h3>
-                        <p class="text-sm text-app-textMuted mb-4">Execute within 24-48 hours to mitigate imminent exploitation risks.</p>
-                        <ul class="space-y-3">
-                            <li class="flex items-start gap-3 bg-app-bg p-3 rounded border border-app-border">
-                                <i class="ph-bold ph-check-circle text-gray-600 mt-0.5"></i>
-                                <div>
-                                    <strong class="text-white text-sm block">Patch Apache Struts</strong>
-                                    <span class="text-xs text-gray-400">Apply vendor update to db-cluster-01 to resolve Deserialization vulnerability.</span>
-                                </div>
-                            </li>
-                            <li class="flex items-start gap-3 bg-app-bg p-3 rounded border border-app-border">
-                                <i class="ph-bold ph-check-circle text-gray-600 mt-0.5"></i>
-                                <div>
-                                    <strong class="text-white text-sm block">Implement Parameterized Queries</strong>
-                                    <span class="text-xs text-gray-400">Refactor login module on auth.gateway.local to eliminate SQLi vector.</span>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="bg-app-panel border border-app-border rounded-xl p-5">
-                        <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2"><i class="ph-fill ph-clock text-amber-500"></i> Short-term Objectives (Phase 2)</h3>
-                        <p class="text-sm text-app-textMuted mb-4">Implement within 14 days to strengthen baseline defense posture.</p>
-                        <ul class="space-y-3">
-                            <li class="flex items-start gap-3 bg-app-bg p-3 rounded border border-app-border">
-                                <i class="ph-bold ph-check-circle text-gray-600 mt-0.5"></i>
-                                <div>
-                                    <strong class="text-white text-sm block">Enforce strict CSP and Security Headers</strong>
-                                    <span class="text-xs text-gray-400">Configure edge routers and WAF to inject HSTS, X-Frame-Options, and Content-Security-Policy.</span>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                `;
+                const phases = AppState.reportData?.remediationPhases || [];
+                let html = '';
+                
+                if(phases.length === 0) {
+                    html = '<p class="text-app-textMuted">No structured remediation plan was extracted from the document.</p>';
+                } else {
+                    phases.forEach(p => {
+                        let itemsHtml = '';
+                        if(p.actions) {
+                            p.actions.forEach(a => {
+                                itemsHtml += `
+                                    <li class="flex items-start gap-3 bg-app-bg p-3 rounded border border-app-border">
+                                        <i class="ph-bold ph-check-circle text-gray-600 mt-0.5"></i>
+                                        <div>
+                                            <strong class="text-white text-sm block">${a.title || 'Action Required'}</strong>
+                                            <span class="text-xs text-gray-400">${a.detail || ''}</span>
+                                        </div>
+                                    </li>
+                                `;
+                            });
+                        }
+                        
+                        html += `
+                            <div class="bg-app-panel border border-app-border rounded-xl p-5 mb-4">
+                                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2"><i class="ph-fill ph-warning-circle text-app-accent"></i> ${p.phaseName || 'Remediation Phase'}</h3>
+                                <p class="text-sm text-app-textMuted mb-4">${p.description || ''}</p>
+                                <ul class="space-y-3">
+                                    ${itemsHtml}
+                                </ul>
+                            </div>
+                        `;
+                    });
+                }
                 document.getElementById('remediation-content').innerHTML = html;
             },
 
             populateCompliance: () => {
+                const comp = AppState.reportData?.compliance || { owaspScore: "N/A", isoGaps: 0, soc2Readiness: "N/A", nistViolations: 0, mappings: [] };
+                
                 const stats = `
                     <div class="bg-app-panel border border-app-border p-4 rounded-lg flex flex-col justify-center items-center">
-                        <span class="text-3xl font-bold text-white mb-1">92%</span>
+                        <span class="text-3xl font-bold text-white mb-1">${comp.owaspScore}</span>
                         <span class="text-xs text-app-textMuted uppercase tracking-wider">OWASP Alignment</span>
                     </div>
                     <div class="bg-app-panel border border-app-border p-4 rounded-lg flex flex-col justify-center items-center">
-                        <span class="text-3xl font-bold text-white mb-1">14</span>
+                        <span class="text-3xl font-bold text-white mb-1">${comp.isoGaps}</span>
                         <span class="text-xs text-app-textMuted uppercase tracking-wider">ISO 27001 Gaps</span>
                     </div>
                     <div class="bg-app-panel border border-app-border p-4 rounded-lg flex flex-col justify-center items-center">
-                        <span class="text-3xl font-bold text-white mb-1">Pass</span>
+                        <span class="text-3xl font-bold text-white mb-1">${comp.soc2Readiness}</span>
                         <span class="text-xs text-app-textMuted uppercase tracking-wider">SOC 2 Readiness</span>
                     </div>
                     <div class="bg-app-panel border border-app-border p-4 rounded-lg flex flex-col justify-center items-center">
-                        <span class="text-3xl font-bold text-white mb-1">4</span>
+                        <span class="text-3xl font-bold text-white mb-1">${comp.nistViolations}</span>
                         <span class="text-xs text-app-textMuted uppercase tracking-wider">NIST Violations</span>
                     </div>
                 `;
@@ -902,75 +805,77 @@
 
                 const tbody = document.getElementById('compliance-table-body');
                 tbody.innerHTML = '';
-                AppState.findings.slice(0, 6).forEach(f => {
-                    tbody.innerHTML += `
-                        <tr class="hover:bg-app-border/20">
-                            <td class="px-4 py-3 font-mono text-xs text-white">${f.id}</td>
-                            <td class="px-4 py-3 text-xs text-gray-300">A03:2021-Injection</td>
-                            <td class="px-4 py-3 text-xs text-gray-300">A.8.2.3</td>
-                            <td class="px-4 py-3 text-xs text-gray-300">SI-10, SI-11</td>
-                            <td class="px-4 py-3 text-xs text-gray-300">CC6.1, CC6.6</td>
-                        </tr>
-                    `;
-                });
+                if(comp.mappings && comp.mappings.length > 0) {
+                    comp.mappings.forEach(m => {
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-app-border/20">
+                                <td class="px-4 py-3 font-mono text-xs text-white">${m.findingId || '-'}</td>
+                                <td class="px-4 py-3 text-xs text-gray-300">${m.owasp || '-'}</td>
+                                <td class="px-4 py-3 text-xs text-gray-300">${m.iso || '-'}</td>
+                                <td class="px-4 py-3 text-xs text-gray-300">${m.nist || '-'}</td>
+                                <td class="px-4 py-3 text-xs text-gray-300">${m.soc2 || '-'}</td>
+                            </tr>
+                        `;
+                    });
+                }
             },
 
             populateExecSummary: () => {
+                const exec = AppState.reportData?.executiveSummary || { riskRating: "Unknown", businessImpact: "No executive summary extracted from document." };
+                
+                let crits=0, highs=0, meds=0;
+                AppState.findings.forEach(f => {
+                    if(f.severity === 'Critical') crits++;
+                    if(f.severity === 'High') highs++;
+                    if(f.severity === 'Medium') meds++;
+                });
+
                 const html = `
                     <div class="flex items-center justify-between bg-app-panel border border-app-border rounded-xl p-6">
                         <div>
-                            <h2 class="text-2xl font-bold text-white mb-1">Overall Risk Rating: <span class="text-red-400">High</span></h2>
+                            <h2 class="text-2xl font-bold text-white mb-1">Overall Risk Rating: <span class="${exec.riskRating === 'Critical' || exec.riskRating === 'High' ? 'text-red-400' : 'text-amber-400'}">${exec.riskRating}</span></h2>
                             <p class="text-sm text-app-textMuted">Assessment derived from contextual aggregation of asset value and exploit probability.</p>
                         </div>
                         <div class="flex gap-2">
                             <div class="flex flex-col items-center justify-center bg-app-bg rounded-lg w-20 h-20 border border-[#7f1d1d]">
-                                <span class="text-2xl font-bold text-[#fca5a5]">2</span>
+                                <span class="text-2xl font-bold text-[#fca5a5]">${crits}</span>
                                 <span class="text-[10px] uppercase text-[#fca5a5]">Critical</span>
                             </div>
                             <div class="flex flex-col items-center justify-center bg-app-bg rounded-lg w-20 h-20 border border-[#7c2d12]">
-                                <span class="text-2xl font-bold text-[#fdba74]">4</span>
+                                <span class="text-2xl font-bold text-[#fdba74]">${highs}</span>
                                 <span class="text-[10px] uppercase text-[#fdba74]">High</span>
                             </div>
                             <div class="flex flex-col items-center justify-center bg-app-bg rounded-lg w-20 h-20 border border-[#78350f]">
-                                <span class="text-2xl font-bold text-[#fcd34d]">5</span>
+                                <span class="text-2xl font-bold text-[#fcd34d]">${meds}</span>
                                 <span class="text-[10px] uppercase text-[#fcd34d]">Med</span>
                             </div>
                         </div>
                     </div>
                     <div class="space-y-4">
                         <h3 class="text-lg font-semibold text-white border-b border-app-border pb-2">Business Impact Analysis</h3>
-                        <p class="text-sm text-gray-300 leading-relaxed">The recent assessment indicates significant exposure within the external-facing authentication gateway. Exploitation of the identified critical vulnerabilities (specifically SQL Injection and Deserialization flaws) could lead to full system compromise, resulting in unauthorized access to sensitive customer data. This poses a direct threat to regulatory compliance (SOC 2, ISO 27001) and carries severe reputational and financial implications.</p>
-                        <p class="text-sm text-gray-300 leading-relaxed">Immediate allocation of engineering resources is recommended to execute the Phase 1 remediation plan within the next 48 hours to secure the perimeter.</p>
+                        <p class="text-sm text-gray-300 leading-relaxed">${exec.businessImpact}</p>
                     </div>
                 `;
                 document.getElementById('exec-summary-content').innerHTML = html;
             },
 
             populateTechSummary: () => {
+                 const tech = AppState.reportData?.technicalSummary || { rootCauseTitle: "N/A", rootCauseDesc: "No technical details extracted.", vulnerableCodePattern: "", secureImplementation: "" };
+                 
                  const html = `
                     <div class="bg-app-panel border border-app-border rounded-xl overflow-hidden">
                         <div class="p-4 bg-app-bg border-b border-app-border">
                             <h3 class="font-mono text-sm text-app-accent flex items-center gap-2">
-                                <i class="ph ph-terminal"></i> Root Cause: Auth Module Injection
+                                <i class="ph ph-terminal"></i> Highlighted Root Cause: ${tech.rootCauseTitle}
                             </h3>
                         </div>
                         <div class="p-5 space-y-4">
-                            <p class="text-sm text-gray-300">The primary authentication controller (\`AuthController.java\`) concatenates user input directly into JDBC queries without sanitization.</p>
-                            <div class="bg-[#0B0F19] rounded border border-app-border p-3 font-mono text-xs text-red-400 overflow-x-auto">
-                                // Vulnerable Code Pattern<br>
-                                String query = "SELECT * FROM users WHERE username = '" + req.getParameter("user") + "' AND pass = '" + hash + "'";<br>
-                                Statement stmt = connection.createStatement();<br>
-                                ResultSet rs = stmt.executeQuery(query);
-                            </div>
-                            <h4 class="text-xs font-semibold text-white uppercase mt-4">Required Remediation Syntax</h4>
-                            <div class="bg-[#0B0F19] rounded border border-app-border p-3 font-mono text-xs text-emerald-400 overflow-x-auto">
-                                // Secure Implementation<br>
-                                String query = "SELECT * FROM users WHERE username = ? AND pass = ?";<br>
-                                PreparedStatement pstmt = connection.prepareStatement(query);<br>
-                                pstmt.setString(1, req.getParameter("user"));<br>
-                                pstmt.setString(2, hash);<br>
-                                ResultSet rs = pstmt.executeQuery();
-                            </div>
+                            <p class="text-sm text-gray-300">${tech.rootCauseDesc}</p>
+                            ${tech.vulnerableCodePattern ? `
+                            <div class="bg-[#0B0F19] rounded border border-app-border p-3 font-mono text-xs text-red-400 overflow-x-auto whitespace-pre-wrap">${tech.vulnerableCodePattern}</div>` : ''}
+                            ${tech.secureImplementation ? `
+                            <h4 class="text-xs font-semibold text-white uppercase mt-4">Suggested Remediation Snippet</h4>
+                            <div class="bg-[#0B0F19] rounded border border-app-border p-3 font-mono text-xs text-emerald-400 overflow-x-auto whitespace-pre-wrap">${tech.secureImplementation}</div>` : ''}
                         </div>
                     </div>
                 `;
@@ -987,15 +892,16 @@
                 let cTodo=0, cProg=0;
 
                 AppState.findings.forEach(f => {
+                    const sevClass = f.severity === 'Critical' ? 'bg-red-500' : f.severity === 'High' ? 'bg-orange-500' : 'bg-amber-500';
                     const card = `
                         <div class="bg-app-bg border border-app-border rounded p-3 cursor-grab hover:border-gray-500 transition-colors">
                             <div class="flex justify-between items-start mb-2">
-                                <span class="text-xs font-mono text-gray-400">${f.id}</span>
-                                <span class="w-2 h-2 rounded-full ${f.severity==='Critical'?'bg-red-500':f.severity==='High'?'bg-orange-500':'bg-amber-500'}"></span>
+                                <span class="text-xs font-mono text-gray-400">${f.id || 'N/A'}</span>
+                                <span class="w-2 h-2 rounded-full ${sevClass}"></span>
                             </div>
-                            <p class="text-sm text-white font-medium mb-3 leading-tight">${f.title}</p>
+                            <p class="text-sm text-white font-medium mb-3 leading-tight">${f.title || 'Untitled Action'}</p>
                             <div class="flex items-center justify-between text-xs text-app-textMuted">
-                                <span class="bg-app-panel px-2 py-1 rounded">${f.asset}</span>
+                                <span class="bg-app-panel px-2 py-1 rounded truncate w-32">${f.asset || 'N/A'}</span>
                                 <i class="ph ph-user-circle text-lg"></i>
                             </div>
                         </div>
@@ -1034,6 +940,27 @@
                 AppState.fileURL = URL.createObjectURL(file);
                 AppState.fileType = ext;
                 AppState.status = 'loaded';
+                
+                // Reset state for new document
+                AppState.reportData = null;
+                AppState.findings = [];
+                AppState.documentText = '';
+
+                // Reset Analyze Button UI
+                const btn = document.getElementById('btn-analyze');
+                btn.innerHTML = '<i class="ph ph-cpu"></i> Execute Heuristic Analysis';
+                btn.className = 'w-full mt-2 bg-app-accent hover:bg-app-accentHover text-white text-sm font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2';
+                btn.disabled = false;
+
+                // Reset Header Badges and Progress Bar
+                document.getElementById('center-badge').classList.add('hidden');
+                document.getElementById('analysis-progress-bar').classList.add('hidden');
+                document.getElementById('analysis-status-text').classList.add('hidden');
+                document.getElementById('progress-fill').style.width = '0%';
+                document.getElementById('analysis-status-text').innerText = 'Engine Idle';
+
+                // Clear previously populated views
+                UI.populateTables();
 
                 // Setup Meta
                 document.getElementById('metadata-section').classList.remove('hidden');
@@ -1058,13 +985,12 @@
 
             renderPreview: (file, ext) => {
                 const container = document.getElementById('preview-container');
-                container.innerHTML = ''; // clear
+                container.innerHTML = ''; 
+                AppState.documentText = ''; // Reset extracted text
 
                 if (ext === 'pdf') {
-                    // Use PDF.js instead of iframe for better sandbox compatibility
                     container.innerHTML = '<div id="pdf-viewer" class="w-full h-full overflow-y-auto bg-[#1e232b] flex flex-col items-center gap-6 p-6"></div>';
                     const viewer = document.getElementById('pdf-viewer');
-                    
                     viewer.innerHTML = '<div class="text-app-textMuted flex items-center gap-2 mt-20"><span class="loader w-4 h-4 border-2"></span> Extracting and rendering PDF pages...</div>';
 
                     const fileReader = new FileReader();
@@ -1072,35 +998,64 @@
                         const typedarray = new Uint8Array(this.result);
                         try {
                             const pdf = await pdfjsLib.getDocument(typedarray).promise;
-                            viewer.innerHTML = ''; // Clear loading text
+                            viewer.innerHTML = ''; 
                             
+                            let fullExtractedText = "";
                             for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
                                 const page = await pdf.getPage(pageNum);
-                                const viewport = page.getViewport({scale: 1.5}); // Adjust scale for better reading quality
                                 
+                                // Extract Text for Gemini
+                                const textContent = await page.getTextContent();
+                                fullExtractedText += textContent.items.map(item => item.str).join(" ") + "\n";
+
+                                // Render Canvas
+                                const viewport = page.getViewport({scale: 1.5}); 
                                 const canvas = document.createElement('canvas');
                                 const context = canvas.getContext('2d');
                                 canvas.height = viewport.height;
                                 canvas.width = viewport.width;
                                 canvas.className = "max-w-full h-auto bg-white shadow-xl rounded shrink-0";
-                                
                                 viewer.appendChild(canvas);
                                 
-                                const renderContext = {
-                                    canvasContext: context,
-                                    viewport: viewport
-                                };
+                                const renderContext = { canvasContext: context, viewport: viewport };
                                 await page.render(renderContext).promise;
                             }
+                            AppState.documentText = fullExtractedText;
                         } catch(err) {
                             viewer.innerHTML = `<div class="text-red-400 p-4 text-center mt-10"><i class="ph ph-warning text-4xl mb-2"></i><p>Error rendering PDF: ${err.message}</p></div>`;
                         }
                     };
                     fileReader.readAsArrayBuffer(file);
                 } 
+                else if (ext === 'xlsx') {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        let fullText = "";
+                        
+                        // Extract text from all sheets into CSV format for the model
+                        workbook.SheetNames.forEach(sheetName => {
+                            const worksheet = workbook.Sheets[sheetName];
+                            const csv = XLSX.utils.sheet_to_csv(worksheet);
+                            if (csv.trim()) {
+                                fullText += `--- Sheet: ${sheetName} ---\n${csv}\n\n`;
+                            }
+                        });
+                        
+                        AppState.documentText = fullText; 
+                        
+                        const pre = document.createElement('pre');
+                        pre.className = 'text-gray-300 text-sm font-mono p-4 w-full h-full overflow-auto whitespace-pre-wrap text-left bg-app-bg';
+                        pre.textContent = fullText.substring(0, 15000) + (fullText.length > 15000 ? '\n\n...[Truncated for UI performance. Full file in memory]...' : '');
+                        container.appendChild(pre);
+                    };
+                    reader.readAsArrayBuffer(file);
+                }
                 else if (['txt', 'md', 'json', 'csv', 'xml'].includes(ext)) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
+                        AppState.documentText = e.target.result; // Store text for Gemini
                         const pre = document.createElement('pre');
                         pre.className = 'text-gray-300 text-sm font-mono p-4 w-full h-full overflow-auto whitespace-pre-wrap text-left bg-app-bg';
                         pre.textContent = e.target.result.substring(0, 15000) + (e.target.result.length > 15000 ? '\n\n...[Truncated for UI performance. Full file in memory]...' : '');
@@ -1115,15 +1070,25 @@
         };
 
         /**
-         * Analysis Engine (Simulated workflow)
+         * Real Gemini Analysis Engine
          */
         const AnalysisEngine = {
-            run: () => {
+            run: async () => {
                 if (AppState.status !== 'loaded' && AppState.status !== 'analyzed') return;
+
+                if (!AppState.apiKey) {
+                    alert("Please provide a Gemini API Key in the top navigation bar to run AI Document Analysis.");
+                    return;
+                }
+
+                if (!AppState.documentText) {
+                    alert("Document text is still being extracted. Please wait a moment and try again.");
+                    return;
+                }
 
                 AppState.status = 'analyzing';
                 const btn = document.getElementById('btn-analyze');
-                btn.innerHTML = '<span class="loader w-4 h-4 border-2 mr-2"></span> Processing...';
+                btn.innerHTML = '<span class="loader w-4 h-4 border-2 mr-2"></span> Analyzing with Gemini AI...';
                 btn.disabled = true;
                 btn.classList.add('opacity-75');
 
@@ -1133,56 +1098,170 @@
                 
                 pBar.classList.remove('hidden');
                 pText.classList.remove('hidden');
+                pText.innerText = "Sending document to Gemini 2.5 Flash...";
+                pFill.style.width = `30%`;
 
-                const steps = [
-                    "Initializing heuristic parser...",
-                    "Reading raw report taxonomy...",
-                    "Extracting vulnerability signatures...",
-                    "Mapping CVE to threat intelligence...",
-                    "Generating actionable remediation steps...",
-                    "Finalizing matrix output..."
-                ];
+                try {
+                    await AnalysisEngine.callGeminiAnalysis(AppState.documentText);
+                    pFill.style.width = `100%`;
+                    pText.innerText = "System Ready";
+                    AnalysisEngine.complete();
+                } catch (error) {
+                    alert("Analysis Failed: " + error.message);
+                    btn.innerHTML = '<i class="ph ph-cpu"></i> Execute Heuristic Analysis';
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-75');
+                    AppState.status = 'loaded';
+                    pText.innerText = "Engine Idle";
+                    pFill.style.width = `0%`;
+                }
+            },
 
-                let stepIndex = 0;
+            callGeminiAnalysis: async (text) => {
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${AppState.apiKey}`;
                 
-                // Simulated progress
-                const interval = setInterval(() => {
-                    if (stepIndex >= steps.length) {
-                        clearInterval(interval);
-                        AnalysisEngine.complete();
-                        return;
+                // Extremely strict JSON schema ensures the model formats its findings
+                // correctly to perfectly fit the UI components.
+                const jsonSchema = {
+                    type: "OBJECT",
+                    properties: {
+                        findings: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    id: { type: "STRING" },
+                                    title: { type: "STRING" },
+                                    severity: { type: "STRING", description: "Must be: Critical, High, Medium, Low, or Informational" },
+                                    cvss: { type: "STRING" },
+                                    asset: { type: "STRING" },
+                                    port: { type: "STRING" },
+                                    cve: { type: "STRING" },
+                                    status: { type: "STRING", description: "Must be: Open, In Progress, or Resolved" },
+                                    desc: { type: "STRING" },
+                                    remediation: { type: "STRING" }
+                                }
+                            }
+                        },
+                        executiveSummary: {
+                            type: "OBJECT",
+                            properties: {
+                                riskRating: { type: "STRING", description: "Critical, High, Medium, or Low" },
+                                businessImpact: { type: "STRING" }
+                            }
+                        },
+                        remediationPhases: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    phaseName: { type: "STRING" },
+                                    description: { type: "STRING" },
+                                    actions: {
+                                        type: "ARRAY",
+                                        items: {
+                                            type: "OBJECT",
+                                            properties: {
+                                                title: { type: "STRING" },
+                                                detail: { type: "STRING" }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        compliance: {
+                            type: "OBJECT",
+                            properties: {
+                                owaspScore: { type: "STRING" },
+                                isoGaps: { type: "NUMBER" },
+                                soc2Readiness: { type: "STRING" },
+                                nistViolations: { type: "NUMBER" },
+                                mappings: {
+                                    type: "ARRAY",
+                                    items: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            findingId: { type: "STRING" },
+                                            owasp: { type: "STRING" },
+                                            iso: { type: "STRING" },
+                                            nist: { type: "STRING" },
+                                            soc2: { type: "STRING" }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        technicalSummary: {
+                            type: "OBJECT",
+                            properties: {
+                                rootCauseTitle: { type: "STRING" },
+                                rootCauseDesc: { type: "STRING" },
+                                vulnerableCodePattern: { type: "STRING" },
+                                secureImplementation: { type: "STRING" }
+                            }
+                        }
                     }
+                };
 
-                    pText.innerText = steps[stepIndex];
-                    pFill.style.width = `${((stepIndex + 1) / steps.length) * 100}%`;
-                    stepIndex++;
-                }, 800);
+                const prompt = "You are an elite cybersecurity VAPT report analyzer. Analyze the following document text and extract all vulnerabilities, compliance mappings, and remediation plans into the strictly requested JSON structure. If details are missing, infer intelligently based on the context, but prioritize factual extraction directly from the document content.";
+                
+                const payload = {
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: jsonSchema,
+                        temperature: 0.1
+                    },
+                    contents: [{
+                        role: "user",
+                        parts: [
+                            { text: prompt },
+                            { text: "DOCUMENT CONTENT:\n" + text.substring(0, 50000) } // Cap text length to avoid limits
+                        ]
+                    }]
+                };
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error?.message || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                try {
+                    const rawText = data.candidates[0].content.parts[0].text;
+                    AppState.reportData = JSON.parse(rawText);
+                    AppState.findings = AppState.reportData.findings || [];
+                } catch(e) {
+                    throw new Error("Failed to parse the structured analysis from Gemini. " + e.message);
+                }
             },
 
             complete: () => {
                 AppState.status = 'analyzed';
-                AppState.findings = SecurityDataFactory.generateFindings();
                 
                 const btn = document.getElementById('btn-analyze');
                 btn.innerHTML = '<i class="ph ph-check-circle"></i> Analysis Complete';
                 btn.classList.remove('bg-app-accent');
                 btn.classList.add('bg-emerald-600');
                 
-                document.getElementById('analysis-status-text').innerText = 'System Ready';
-                
                 const badge = document.getElementById('center-badge');
                 badge.innerText = `${AppState.findings.length} Findings Extracted`;
                 badge.classList.remove('hidden');
 
+                // This triggers all dynamic UI populators directly from the Gemini payload
                 UI.populateTables();
                 
-                // Auto switch to vulnerabilities view
                 setTimeout(() => {
                     UI.switchView('vulnerabilities');
                 }, 500);
                 
-                // Add system message to chat
-                ChatHandler.appendMessage('system', "Report analysis complete. I have mapped the findings to our threat intelligence database. You can now ask me to generate specific scripts, explain risk contexts, or draft compliance reports based on this data.");
+                ChatHandler.appendMessage('system', "Report analysis complete. Extracted data has perfectly populated the workspace. You can now ask me advanced questions about this specific document.");
             }
         };
 
@@ -1209,7 +1288,7 @@
                 const loadingId = ChatHandler.appendLoading();
 
                 try {
-                    const response = await ChatHandler.callGeminiAPI(text);
+                    const response = await ChatHandler.callGeminiChat(text);
                     document.getElementById(loadingId).remove();
                     ChatHandler.appendMessage('ai', response);
                 } catch (error) {
@@ -1221,7 +1300,7 @@
                 }
             },
 
-            callGeminiAPI: async (query) => {
+            callGeminiChat: async (query) => {
                 const apiKey = AppState.apiKey;
                 const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
                 
@@ -1286,7 +1365,7 @@
                     // Basic Markdown to HTML parsing for the AI response
                     const formattedText = text
                         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                        .replace(/```([\s\S]*?)```/g, '<pre class="bg-[#0B0F19] p-2 rounded mt-2 border border-gray-700 text-xs overflow-x-auto text-green-400 font-mono"><code>$1</code></pre>')
+                        .replace(/\`\`\`([\s\S]*?)\`\`\`/g, '<pre class="bg-[#0B0F19] p-2 rounded mt-2 border border-gray-700 text-xs overflow-x-auto text-green-400 font-mono"><code>$1</code></pre>')
                         .replace(/\n/g, '<br>');
 
                     div.innerHTML = `
