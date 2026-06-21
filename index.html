@@ -634,9 +634,13 @@
                     });
                 });
 
-                // Analyze Button
+                // Analyze / Cancel Button
                 document.getElementById('btn-analyze').addEventListener('click', () => {
-                    AnalysisEngine.run();
+                    if (AppState.status === 'analyzing') {
+                        AnalysisEngine.abort();
+                    } else {
+                        AnalysisEngine.run();
+                    }
                 });
 
                 // Chat Logic
@@ -1033,7 +1037,7 @@
                 const btn = document.getElementById('btn-analyze');
                 if (selectedCount === 0 || AppState.uploadedSources.some(s => s.selected && s.status === 'extracting')) {
                     btn.classList.add('opacity-50', 'cursor-not-allowed');
-                } else {
+                } else if (AppState.status !== 'analyzing') {
                     btn.classList.remove('opacity-50', 'cursor-not-allowed');
                 }
             },
@@ -1179,6 +1183,8 @@
          * Real Gemini Analysis Engine
          */
         const AnalysisEngine = {
+            abortController: null,
+
             run: async () => {
                 if (AppState.status !== 'loaded' && AppState.status !== 'analyzed') return;
 
@@ -1208,10 +1214,12 @@
                 AppState.documentText = combinedText;
 
                 AppState.status = 'analyzing';
+                AnalysisEngine.abortController = new AbortController();
+                
                 const btn = document.getElementById('btn-analyze');
-                btn.innerHTML = '<span class="loader w-4 h-4 border-2 mr-2"></span> Analyzing with Gemini AI...';
-                btn.disabled = true;
-                btn.classList.add('opacity-75');
+                btn.innerHTML = '<span class="loader w-4 h-4 border-2 mr-2"></span> Stop Analysis';
+                btn.className = 'w-full mt-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2';
+                btn.disabled = false; // keep it enabled so the user can abort
 
                 const pBar = document.getElementById('analysis-progress-bar');
                 const pFill = document.getElementById('progress-fill');
@@ -1228,13 +1236,26 @@
                     pText.innerText = "System Ready";
                     AnalysisEngine.complete();
                 } catch (error) {
-                    alert("Analysis Failed: " + error.message);
+                    if (error.name === 'AbortError') {
+                        console.log("Analysis cancelled by user.");
+                        pText.innerText = "Analysis Cancelled";
+                    } else {
+                        alert("Analysis Failed: " + error.message);
+                        pText.innerText = "Engine Idle";
+                    }
+                    
+                    // Reset UI back to ready state
                     btn.innerHTML = '<i class="ph ph-cpu"></i> Execute Heuristic Analysis';
+                    btn.className = 'w-full mt-2 bg-app-accent hover:bg-app-accentHover text-white text-sm font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2';
                     btn.disabled = false;
-                    btn.classList.remove('opacity-75');
                     AppState.status = 'loaded';
-                    pText.innerText = "Engine Idle";
                     pFill.style.width = `0%`;
+                }
+            },
+
+            abort: () => {
+                if (AnalysisEngine.abortController) {
+                    AnalysisEngine.abortController.abort();
                 }
             },
 
@@ -1345,7 +1366,8 @@
                 const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
+                    signal: AnalysisEngine.abortController.signal // Link abort controller
                 });
 
                 if (!response.ok) {
@@ -1368,8 +1390,7 @@
                 
                 const btn = document.getElementById('btn-analyze');
                 btn.innerHTML = '<i class="ph ph-check-circle"></i> Analysis Complete';
-                btn.classList.remove('bg-app-accent');
-                btn.classList.add('bg-emerald-600');
+                btn.className = 'w-full mt-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2';
                 
                 const badge = document.getElementById('center-badge');
                 badge.innerText = `${AppState.findings.length} Findings Extracted`;
