@@ -1009,9 +1009,30 @@
                     return;
                 }
 
-                AppState.currentFiles = files;
+                // Reset AppState completely when new files are uploaded
+                AppState.status = 'loaded';
+                AppState.reportData = null;
+                AppState.findings = [];
+                AppState.documentText = '';
+                
+                // Clear the table views
+                UI.populateTables();
+
                 document.getElementById('sources-list-container').classList.remove('hidden');
                 document.getElementById('metadata-section').classList.remove('hidden');
+
+                // Reset Analyze Button UI back to initial state
+                const btn = document.getElementById('btn-analyze');
+                btn.innerHTML = '<i class="ph ph-cpu"></i> Execute Heuristic Analysis';
+                btn.className = 'w-full mt-2 bg-app-accent hover:bg-app-accentHover text-white text-sm font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2';
+                btn.disabled = false;
+
+                // Reset Header Badges and Progress Bar
+                document.getElementById('center-badge').classList.add('hidden');
+                document.getElementById('analysis-progress-bar').classList.add('hidden');
+                document.getElementById('analysis-status-text').classList.add('hidden');
+                document.getElementById('progress-fill').style.width = '0%';
+                document.getElementById('analysis-status-text').innerText = 'Engine Idle';
 
                 // Process and add new files to the sources list
                 files.forEach(file => {
