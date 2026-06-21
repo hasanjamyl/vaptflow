@@ -553,6 +553,23 @@
         </div>
     </div>
 
+    <!-- Alert Message Modal -->
+    <div id="alert-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4 anim-fade-in">
+        <div class="bg-app-panel border border-app-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div class="p-6 flex flex-col items-center text-center">
+                <div id="alert-icon-container" class="w-16 h-16 rounded-full flex items-center justify-center mb-4">
+                    <i id="alert-icon" class="text-3xl"></i>
+                </div>
+                <h3 id="alert-title" class="text-xl font-bold text-white mb-2"></h3>
+                <p id="alert-message" class="text-sm text-gray-300 mb-6 leading-relaxed"></p>
+                <div id="alert-details-container" class="w-full bg-app-bg border border-app-border rounded p-3 mb-6 hidden">
+                    <p id="alert-details" class="text-xs text-app-textMuted font-mono text-left overflow-x-auto whitespace-pre-wrap"></p>
+                </div>
+                <button id="close-alert-btn" class="w-full py-2.5 rounded-lg text-sm font-medium text-white transition-colors focus:outline-none"></button>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript Application Logic -->
     <script>
         /**
@@ -653,6 +670,11 @@
                 document.getElementById('close-modal').addEventListener('click', () => {
                     document.getElementById('vuln-modal').classList.add('hidden');
                 });
+
+                // Alert Modal Close
+                document.getElementById('close-alert-btn').addEventListener('click', () => {
+                    document.getElementById('alert-modal').classList.add('hidden');
+                });
             },
 
             updateKeyStatus: () => {
@@ -711,6 +733,42 @@
                     'Informational': 'bg-[#1e293b] text-[#cbd5e1] border-[#334155]'
                 };
                 return map[severity] || map['Informational'];
+            },
+
+            showAlert: (type, title, message, details = null) => {
+                const modal = document.getElementById('alert-modal');
+                const iconContainer = document.getElementById('alert-icon-container');
+                const icon = document.getElementById('alert-icon');
+                const titleEl = document.getElementById('alert-title');
+                const msgEl = document.getElementById('alert-message');
+                const detailsContainer = document.getElementById('alert-details-container');
+                const detailsEl = document.getElementById('alert-details');
+                const btn = document.getElementById('close-alert-btn');
+
+                titleEl.innerText = title;
+                msgEl.innerText = message;
+
+                if (details) {
+                    detailsEl.innerText = details;
+                    detailsContainer.classList.remove('hidden');
+                } else {
+                    detailsContainer.classList.add('hidden');
+                }
+
+                if (type === 'warning' || type === 'quota') {
+                    iconContainer.className = 'w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-amber-500/20 border border-amber-500/30';
+                    icon.className = 'ph-fill ph-warning-circle text-3xl text-amber-500';
+                    btn.className = 'w-full py-2.5 rounded-lg text-sm font-medium text-white transition-colors focus:outline-none bg-amber-600 hover:bg-amber-700';
+                    btn.innerText = 'Understood';
+                } else {
+                    // Default to Error
+                    iconContainer.className = 'w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-red-500/20 border border-red-500/30';
+                    icon.className = 'ph-fill ph-x-circle text-3xl text-red-500';
+                    btn.className = 'w-full py-2.5 rounded-lg text-sm font-medium text-white transition-colors focus:outline-none bg-red-600 hover:bg-red-700';
+                    btn.innerText = 'Dismiss';
+                }
+
+                modal.classList.remove('hidden');
             },
 
             populateTables: () => {
@@ -947,11 +1005,11 @@
                 const files = Array.from(fileList).filter(f => validExts.includes(f.name.split('.').pop().toLowerCase()));
 
                 if (files.length === 0) {
-                    alert("No supported file types found for VAPT report analysis.");
+                    UI.showAlert('warning', 'Unsupported File Type', 'No supported file types found for VAPT report analysis. Please upload PDF, XLSX, CSV, JSON, XML, or MD files.');
                     return;
                 }
 
-                AppState.status = 'loaded';
+                AppState.currentFiles = files;
                 document.getElementById('sources-list-container').classList.remove('hidden');
                 document.getElementById('metadata-section').classList.remove('hidden');
 
@@ -1189,18 +1247,18 @@
                 if (AppState.status !== 'loaded' && AppState.status !== 'analyzed') return;
 
                 if (!AppState.apiKey) {
-                    alert("Please provide a Gemini API Key in the top navigation bar to run AI Document Analysis.");
+                    UI.showAlert('warning', 'API Key Required', 'Please provide a Gemini API Key in the top navigation bar to run AI Document Analysis.');
                     return;
                 }
 
                 const selectedSources = AppState.uploadedSources.filter(s => s.selected);
                 if (selectedSources.length === 0) {
-                    alert("Please select at least one source document from the list.");
+                    UI.showAlert('warning', 'No Sources Selected', 'Please select at least one source document from the list before executing analysis.');
                     return;
                 }
 
                 if (selectedSources.some(s => s.status === 'extracting')) {
-                    alert("Some selected documents are still being extracted. Please wait a moment.");
+                    UI.showAlert('warning', 'Extraction in Progress', 'Some selected documents are still being extracted. Please wait a moment for the process to finish.');
                     return;
                 }
 
@@ -1239,8 +1297,11 @@
                     if (error.name === 'AbortError') {
                         console.log("Analysis cancelled by user.");
                         pText.innerText = "Analysis Cancelled";
+                    } else if (error.isQuota) {
+                        UI.showAlert('quota', 'API Quota Exceeded', 'You have exceeded your Gemini API usage limits. Please check your Google Cloud Console billing and quota settings.', error.message);
+                        pText.innerText = "Quota Exceeded";
                     } else {
-                        alert("Analysis Failed: " + error.message);
+                        UI.showAlert('error', 'Analysis Failed', 'An error occurred while communicating with the Gemini API.', error.message);
                         pText.innerText = "Engine Idle";
                     }
                     
@@ -1372,7 +1433,12 @@
 
                 if (!response.ok) {
                     const errData = await response.json();
-                    throw new Error(errData.error?.message || `HTTP ${response.status}`);
+                    const errMsg = errData.error?.message || `HTTP ${response.status}`;
+                    const customError = new Error(errMsg);
+                    if (response.status === 429) {
+                        customError.isQuota = true;
+                    }
+                    throw customError;
                 }
 
                 const data = await response.json();
@@ -1417,7 +1483,7 @@
                 if(!text) return;
 
                 if(!AppState.apiKey) {
-                    ChatHandler.appendMessage('system', "Error: Gemini API Key is required to utilize query capabilities. Please configure it in the top navigation bar.");
+                    UI.showAlert('warning', 'API Key Required', 'Gemini API Key is required to utilize query capabilities. Please configure it in the top navigation bar.');
                     return;
                 }
 
@@ -1435,7 +1501,12 @@
                     ChatHandler.appendMessage('ai', response);
                 } catch (error) {
                     document.getElementById(loadingId).remove();
-                    ChatHandler.appendMessage('system', "Connection error or invalid API context. " + error.message);
+                    if(error.isQuota) {
+                        UI.showAlert('quota', 'API Quota Exceeded', 'You have exceeded your Gemini API usage limits. Please check your Google Cloud Console billing and quota settings.', error.message);
+                        ChatHandler.appendMessage('system', "Error: API Quota Exceeded.");
+                    } else {
+                        ChatHandler.appendMessage('system', "Connection error or invalid API context. " + error.message);
+                    }
                 } finally {
                     input.disabled = false;
                     input.focus();
@@ -1469,7 +1540,12 @@
 
                 if (!response.ok) {
                     const errData = await response.json();
-                    throw new Error(errData.error?.message || `HTTP ${response.status}`);
+                    const errMsg = errData.error?.message || `HTTP ${response.status}`;
+                    const customError = new Error(errMsg);
+                    if (response.status === 429) {
+                        customError.isQuota = true;
+                    }
+                    throw customError;
                 }
 
                 const data = await response.json();
