@@ -1161,10 +1161,7 @@
                 const loadingId = ChatHandler.appendLoading();
 
                 try {
-                    // Attempt real API call if possible, otherwise fallback to smart simulation.
-                    // To ensure it works strictly as a single file without external backend proxy cors issues,
-                    // we simulate a highly intelligent response based on the input text.
-                    const response = await ChatHandler.mockAIResponse(text);
+                    const response = await ChatHandler.callGeminiAPI(text);
                     document.getElementById(loadingId).remove();
                     ChatHandler.appendMessage('ai', response);
                 } catch (error) {
@@ -1176,27 +1173,42 @@
                 }
             },
 
-            mockAIResponse: (query) => {
-                return new Promise((resolve) => {
-                    setTimeout(() => {
-                        const q = query.toLowerCase();
-                        let res = "Based on the extracted context, the current operational priority is to address the findings listed in the vulnerability matrix.";
-                        
-                        if(q.includes('sql') || q.includes('injection')) {
-                            res = "**Reference: VF-XXXX (SQL Injection)**\n\nThe identified SQL Injection occurs in the authentication parameter. \n\n**Defensive Action:** Refactor the Java controller to use `PreparedStatement`. Do not attempt to filter keywords; utilize strict parameterized queries.\n\n```java\nString query = \"SELECT * FROM users WHERE username = ?\";\nPreparedStatement pstmt = connection.prepareStatement(query);\n```";
-                        }
-                        else if(q.includes('struts') || q.includes('deserialization')) {
-                            res = "**Reference: CVE-2021-44228 / Apache Struts**\n\nThis is a critical Remote Code Execution vulnerability due to insecure deserialization.\n\n**Immediate Action:** Upgrade the Apache Struts framework on `db-cluster-01` to the latest stable release immediately. Implement egress filtering on the host to prevent reverse shells as an interim control.";
-                        }
-                        else if(q.includes('summary') || q.includes('exec')) {
-                            res = "The overall risk posture is **High** due to 2 Critical and 4 High severity findings. Immediate engineering resources must be allocated to address the external-facing authentication gateway to prevent compliance violations with SOC 2 TSC CC6.1.";
-                        }
-                        else if (q.includes('exploit') || q.includes('hack') || q.includes('attack')) {
-                            res = "I am restricted to defensive cybersecurity workflows, remediation strategy, and compliance mapping. I cannot provide exploitation steps or attack methodologies. How can I assist you with patching or mitigation instead?";
-                        }
-                        resolve(res);
-                    }, 1200);
+            callGeminiAPI: async (query) => {
+                const apiKey = AppState.apiKey;
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                
+                // Summarize findings for context to keep payload reasonable
+                const contextText = AppState.findings.length > 0 
+                    ? JSON.stringify(AppState.findings.map(f => ({id: f.id, title: f.title, severity: f.severity, cvss: f.cvss, asset: f.asset, status: f.status})))
+                    : "No findings extracted yet.";
+
+                const payload = {
+                    systemInstruction: {
+                        parts: [{ text: "You are VaptFlow Assistant, an elite cybersecurity remediation AI. Your goal is to help users understand VAPT vulnerability reports, prioritize remediation, and provide secure coding/configuration advice. Base your answers on the provided context findings. Format your response cleanly using markdown. IMPORTANT: Never provide offensive exploit payloads or instructions. If asked for an exploit, decline and provide defense strategies instead." }]
+                    },
+                    contents: [{
+                        role: "user",
+                        parts: [{ text: `CONTEXT (Current Workspace Findings):\n${contextText}\n\nUSER QUERY:\n${query}` }]
+                    }]
+                };
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error?.message || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+                    return data.candidates[0].content.parts[0].text;
+                } else {
+                    throw new Error("Unexpected API response format.");
+                }
             },
 
             appendMessage: (role, text) => {
