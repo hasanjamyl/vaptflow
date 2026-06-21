@@ -196,15 +196,29 @@
                     
                     <!-- Upload Zone -->
                     <div id="dropzone" class="border-2 border-dashed border-app-border rounded-xl p-4 text-center cursor-pointer hover:border-app-textMuted transition-colors group bg-app-bg">
-                        <input type="file" id="file-upload" class="hidden" accept=".pdf,.html,.csv,.xml,.json,.docx,.xlsx,.txt,.md">
+                        <input type="file" id="file-upload" class="hidden" accept=".pdf,.html,.csv,.xml,.json,.docx,.xlsx,.txt,.md" multiple>
                         <i class="ph ph-cloud-arrow-up text-3xl text-app-textMuted group-hover:text-white transition-colors mb-2"></i>
-                        <p class="text-sm font-medium text-white mb-1">Upload Report</p>
+                        <p class="text-sm font-medium text-white mb-1">Upload Report(s)</p>
                         <p class="text-xs text-app-textMuted">PDF, XLSX, CSV, JSON, XML, MD</p>
                     </div>
                 </div>
 
                 <!-- Meta & Nav Container -->
                 <div class="flex-1 overflow-y-auto">
+                    
+                    <!-- Sources List (NotebookLM Style) -->
+                    <div id="sources-list-container" class="p-4 border-b border-app-border hidden">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                                <i class="ph ph-books"></i> Uploaded Sources
+                            </h3>
+                            <span class="bg-app-border text-xs px-2 py-0.5 rounded-full" id="source-count-badge">0</span>
+                        </div>
+                        <div id="sources-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
                     <!-- File Metadata Form (Hidden until upload) -->
                     <div id="metadata-section" class="p-4 border-b border-app-border hidden bg-app-bg/50">
                         <div class="flex items-center justify-between mb-3">
@@ -215,7 +229,7 @@
                         </div>
                         <div class="space-y-3">
                             <div>
-                                <label class="block text-xs text-app-textMuted mb-1">Report Name</label>
+                                <label class="block text-xs text-app-textMuted mb-1">Report Name(s)</label>
                                 <input type="text" id="meta-name" class="w-full bg-app-panel border border-app-border rounded px-2 py-1 text-sm text-white focus:border-app-accent outline-none">
                             </div>
                             <div class="grid grid-cols-2 gap-2">
@@ -243,7 +257,7 @@
                     <!-- Navigation Menu -->
                     <nav id="workspace-nav" class="p-2 space-y-1">
                         <a href="#" data-view="preview" class="nav-item active flex items-center gap-3 px-3 py-2 text-sm text-white bg-app-border/50 rounded-lg transition-colors">
-                            <i class="ph ph-file-text text-lg"></i> Source Document
+                            <i class="ph ph-file-text text-lg"></i> Source Document(s)
                         </a>
                         <a href="#" data-view="vulnerabilities" class="nav-item flex items-center gap-3 px-3 py-2 text-sm text-app-textMuted hover:text-white hover:bg-app-border/30 rounded-lg transition-colors">
                             <i class="ph ph-bug text-lg text-red-400"></i> Vulnerability Matrix
@@ -293,8 +307,8 @@
                             <div class="w-24 h-24 rounded-full bg-app-border/30 flex items-center justify-center mb-6">
                                 <i class="ph ph-shield-search text-5xl text-app-textMuted"></i>
                             </div>
-                            <h2 class="text-xl font-semibold text-white mb-2">Awaiting Source Document</h2>
-                            <p class="text-sm text-app-textMuted max-w-md">Upload a VAPT report from the left sidebar to initialize the workspace, extract findings, and build actionable remediation workflows.</p>
+                            <h2 class="text-xl font-semibold text-white mb-2">Awaiting Source Document(s)</h2>
+                            <p class="text-sm text-app-textMuted max-w-md">Upload one or multiple VAPT reports from the left sidebar to initialize the workspace, extract findings, and build actionable remediation workflows.</p>
                         </div>
                     </section>
 
@@ -546,10 +560,8 @@
          */
         const AppState = {
             apiKey: sessionStorage.getItem('vaptflow_gemini_key') || null,
-            currentFile: null,
-            fileURL: null,
-            fileType: null,
-            documentText: '', // Holds the extracted text to send to Gemini
+            uploadedSources: [], // Holds objects for each uploaded file (NotebookLM style)
+            documentText: '', // Holds the combined extracted text to send to Gemini
             reportData: null, // Holds the parsed JSON returned from Gemini
             status: 'idle', // idle, loaded, analyzing, analyzed
             currentView: 'empty',
@@ -604,13 +616,13 @@
                     e.preventDefault();
                     dropzone.classList.remove('dropzone-active');
                     if (e.dataTransfer.files.length > 0) {
-                        FileHandler.processFile(e.dataTransfer.files[0]);
+                        FileHandler.processFiles(e.dataTransfer.files);
                     }
                 });
 
                 fileInput.addEventListener('change', (e) => {
                     if (e.target.files.length > 0) {
-                        FileHandler.processFile(e.target.files[0]);
+                        FileHandler.processFiles(e.target.files);
                     }
                 });
 
@@ -924,52 +936,231 @@
          * File Handling Logic
          */
         const FileHandler = {
-            processFile: (file) => {
-                if(!file) return;
+            processFiles: async (fileList) => {
+                if(!fileList || fileList.length === 0) return;
 
-                const name = file.name;
-                const ext = name.split('.').pop().toLowerCase();
                 const validExts = ['pdf', 'html', 'csv', 'xml', 'json', 'docx', 'xlsx', 'txt', 'md'];
+                const files = Array.from(fileList).filter(f => validExts.includes(f.name.split('.').pop().toLowerCase()));
 
-                if (!validExts.includes(ext)) {
-                    alert("Unsupported file type for VAPT report analysis.");
+                if (files.length === 0) {
+                    alert("No supported file types found for VAPT report analysis.");
                     return;
                 }
 
-                AppState.currentFile = file;
-                AppState.fileURL = URL.createObjectURL(file);
-                AppState.fileType = ext;
                 AppState.status = 'loaded';
-                
-                // Reset state for new document
-                AppState.reportData = null;
-                AppState.findings = [];
-                AppState.documentText = '';
-
-                // Reset Analyze Button UI
-                const btn = document.getElementById('btn-analyze');
-                btn.innerHTML = '<i class="ph ph-cpu"></i> Execute Heuristic Analysis';
-                btn.className = 'w-full mt-2 bg-app-accent hover:bg-app-accentHover text-white text-sm font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2';
-                btn.disabled = false;
-
-                // Reset Header Badges and Progress Bar
-                document.getElementById('center-badge').classList.add('hidden');
-                document.getElementById('analysis-progress-bar').classList.add('hidden');
-                document.getElementById('analysis-status-text').classList.add('hidden');
-                document.getElementById('progress-fill').style.width = '0%';
-                document.getElementById('analysis-status-text').innerText = 'Engine Idle';
-
-                // Clear previously populated views
-                UI.populateTables();
-
-                // Setup Meta
+                document.getElementById('sources-list-container').classList.remove('hidden');
                 document.getElementById('metadata-section').classList.remove('hidden');
-                document.getElementById('meta-name').value = name;
-                document.getElementById('meta-type').value = FileHandler.detectType(name);
+
+                // Process and add new files to the sources list
+                files.forEach(file => {
+                    const id = 'src_' + Math.random().toString(36).substr(2, 9);
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    
+                    const sourceObj = {
+                        id: id,
+                        file: file,
+                        name: file.name,
+                        ext: ext,
+                        text: '',
+                        selected: true,
+                        status: 'extracting'
+                    };
+                    AppState.uploadedSources.push(sourceObj);
+                    
+                    // Extract text in the background
+                    FileHandler.extractText(file, ext)
+                        .then(text => {
+                            sourceObj.text = text;
+                            sourceObj.status = 'ready';
+                            FileHandler.renderSourcesList();
+                        })
+                        .catch(err => {
+                            console.error(`Failed to extract ${file.name}:`, err);
+                            sourceObj.status = 'error';
+                            FileHandler.renderSourcesList();
+                        });
+                });
+
+                FileHandler.renderSourcesList();
                 
-                // Show Preview automatically
+                // Show the preview of the first newly added file
                 UI.switchView('preview');
-                FileHandler.renderPreview(file, ext);
+                const lastAdded = AppState.uploadedSources[AppState.uploadedSources.length - files.length];
+                if(lastAdded) FileHandler.previewSource(lastAdded);
+            },
+
+            renderSourcesList: () => {
+                const container = document.getElementById('sources-list');
+                container.innerHTML = '';
+                
+                let selectedCount = 0;
+                
+                AppState.uploadedSources.forEach(src => {
+                    if(src.selected) selectedCount++;
+                    
+                    const div = document.createElement('div');
+                    div.className = `flex items-center justify-between p-2 rounded border ${src.selected ? 'bg-app-accent/10 border-app-accent/30' : 'bg-app-bg border-app-border'} transition-colors`;
+                    
+                    let statusIcon = src.status === 'extracting' 
+                        ? '<span class="loader w-3 h-3 border-2 border-app-textMuted border-b-app-accent shrink-0"></span>'
+                        : src.status === 'error'
+                        ? '<i class="ph-fill ph-warning-circle text-red-500 shrink-0"></i>'
+                        : '<i class="ph-fill ph-check-circle text-emerald-500 shrink-0"></i>';
+
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3 overflow-hidden flex-1 cursor-pointer group" onclick="FileHandler.previewSourceById('${src.id}')">
+                            <input type="checkbox" ${src.selected ? 'checked' : ''} 
+                                class="w-4 h-4 rounded border-gray-600 text-app-accent bg-gray-700 focus:ring-0 cursor-pointer shrink-0"
+                                onclick="event.stopPropagation(); FileHandler.toggleSource('${src.id}')">
+                            <i class="ph ph-file-text text-app-textMuted text-lg group-hover:text-white transition-colors shrink-0"></i>
+                            <span class="text-sm text-white truncate flex-1 hover:text-app-accent transition-colors" title="${src.name}">${src.name}</span>
+                        </div>
+                        <div class="ml-2 pl-2 border-l border-app-border flex items-center shrink-0">
+                            ${statusIcon}
+                            <button class="ml-2 text-app-textMuted hover:text-red-400 transition-colors shrink-0" onclick="FileHandler.removeSource('${src.id}')" title="Remove">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+
+                document.getElementById('source-count-badge').innerText = `${selectedCount}/${AppState.uploadedSources.length}`;
+                document.getElementById('meta-name').value = selectedCount > 0 ? `${selectedCount} source(s) selected` : 'No sources selected';
+                document.getElementById('meta-type').value = 'Mixed Sources';
+                
+                // Check if Analyze button should be enabled
+                const btn = document.getElementById('btn-analyze');
+                if (selectedCount === 0 || AppState.uploadedSources.some(s => s.selected && s.status === 'extracting')) {
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            },
+
+            toggleSource: (id) => {
+                const src = AppState.uploadedSources.find(s => s.id === id);
+                if(src) {
+                    src.selected = !src.selected;
+                    FileHandler.renderSourcesList();
+                }
+            },
+
+            removeSource: (id) => {
+                AppState.uploadedSources = AppState.uploadedSources.filter(s => s.id !== id);
+                FileHandler.renderSourcesList();
+                
+                if(AppState.uploadedSources.length === 0) {
+                    document.getElementById('sources-list-container').classList.add('hidden');
+                    document.getElementById('metadata-section').classList.add('hidden');
+                    UI.switchView('empty');
+                }
+            },
+
+            previewSourceById: (id) => {
+                const src = AppState.uploadedSources.find(s => s.id === id);
+                if(src) {
+                    UI.switchView('preview');
+                    FileHandler.previewSource(src);
+                }
+            },
+
+            previewSource: (sourceObj) => {
+                const container = document.getElementById('preview-container');
+                container.innerHTML = ''; 
+                
+                if (sourceObj.ext === 'pdf') {
+                    FileHandler.renderSinglePdf(sourceObj.file);
+                } else {
+                    const textContent = sourceObj.text || 'Document is currently extracting...';
+                    const pre = document.createElement('pre');
+                    pre.className = 'text-gray-300 text-sm font-mono p-4 w-full h-full overflow-auto whitespace-pre-wrap text-left bg-app-bg';
+                    pre.textContent = textContent.substring(0, 30000) + (textContent.length > 30000 ? '\n\n...[Preview Truncated. Full file loaded in memory]...' : '');
+                    container.appendChild(pre);
+                }
+            },
+
+            extractText: (file, ext) => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+
+                    if (ext === 'pdf') {
+                        reader.onload = async function() {
+                            const typedarray = new Uint8Array(this.result);
+                            try {
+                                const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                                let fullText = "";
+                                for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                                    const page = await pdf.getPage(pageNum);
+                                    const textContent = await page.getTextContent();
+                                    fullText += textContent.items.map(item => item.str).join(" ") + "\n";
+                                }
+                                resolve(fullText);
+                            } catch(err) {
+                                reject(err);
+                            }
+                        };
+                        reader.readAsArrayBuffer(file);
+                    }
+                    else if (ext === 'xlsx') {
+                        reader.onload = (e) => {
+                            try {
+                                const data = new Uint8Array(e.target.result);
+                                const workbook = XLSX.read(data, {type: 'array'});
+                                let fullText = "";
+                                workbook.SheetNames.forEach(sheetName => {
+                                    const worksheet = workbook.Sheets[sheetName];
+                                    const csv = XLSX.utils.sheet_to_csv(worksheet);
+                                    if (csv.trim()) {
+                                        fullText += `--- Sheet: ${sheetName} ---\n${csv}\n\n`;
+                                    }
+                                });
+                                resolve(fullText);
+                            } catch(err) {
+                                reject(err);
+                            }
+                        };
+                        reader.readAsArrayBuffer(file);
+                    }
+                    else {
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.onerror = (e) => reject(e);
+                        reader.readAsText(file);
+                    }
+                });
+            },
+
+            renderSinglePdf: (file) => {
+                const container = document.getElementById('preview-container');
+                container.innerHTML = '<div id="pdf-viewer" class="w-full h-full overflow-y-auto bg-[#1e232b] flex flex-col items-center gap-6 p-6"></div>';
+                const viewer = document.getElementById('pdf-viewer');
+                viewer.innerHTML = '<div class="text-app-textMuted flex items-center gap-2 mt-20"><span class="loader w-4 h-4 border-2"></span> Rendering PDF pages...</div>';
+
+                const fileReader = new FileReader();
+                fileReader.onload = async function() {
+                    const typedarray = new Uint8Array(this.result);
+                    try {
+                        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                        viewer.innerHTML = ''; 
+                        
+                        for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                            const page = await pdf.getPage(pageNum);
+                            const viewport = page.getViewport({scale: 1.5}); 
+                            const canvas = document.createElement('canvas');
+                            const context = canvas.getContext('2d');
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+                            canvas.className = "max-w-full h-auto bg-white shadow-xl rounded shrink-0 mb-4";
+                            viewer.appendChild(canvas);
+                            
+                            const renderContext = { canvasContext: context, viewport: viewport };
+                            await page.render(renderContext).promise;
+                        }
+                    } catch(err) {
+                        viewer.innerHTML = `<div class="text-red-400 p-4 text-center mt-10"><i class="ph ph-warning text-4xl mb-2"></i><p>Error rendering PDF view: ${err.message}</p></div>`;
+                    }
+                };
+                fileReader.readAsArrayBuffer(file);
             },
 
             detectType: (filename) => {
@@ -981,91 +1172,6 @@
                 if (lower.includes('openvas')) return 'OpenVAS';
                 if (lower.includes('nmap')) return 'Nmap Scan';
                 return 'Generic Security Report';
-            },
-
-            renderPreview: (file, ext) => {
-                const container = document.getElementById('preview-container');
-                container.innerHTML = ''; 
-                AppState.documentText = ''; // Reset extracted text
-
-                if (ext === 'pdf') {
-                    container.innerHTML = '<div id="pdf-viewer" class="w-full h-full overflow-y-auto bg-[#1e232b] flex flex-col items-center gap-6 p-6"></div>';
-                    const viewer = document.getElementById('pdf-viewer');
-                    viewer.innerHTML = '<div class="text-app-textMuted flex items-center gap-2 mt-20"><span class="loader w-4 h-4 border-2"></span> Extracting and rendering PDF pages...</div>';
-
-                    const fileReader = new FileReader();
-                    fileReader.onload = async function() {
-                        const typedarray = new Uint8Array(this.result);
-                        try {
-                            const pdf = await pdfjsLib.getDocument(typedarray).promise;
-                            viewer.innerHTML = ''; 
-                            
-                            let fullExtractedText = "";
-                            for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                                const page = await pdf.getPage(pageNum);
-                                
-                                // Extract Text for Gemini
-                                const textContent = await page.getTextContent();
-                                fullExtractedText += textContent.items.map(item => item.str).join(" ") + "\n";
-
-                                // Render Canvas
-                                const viewport = page.getViewport({scale: 1.5}); 
-                                const canvas = document.createElement('canvas');
-                                const context = canvas.getContext('2d');
-                                canvas.height = viewport.height;
-                                canvas.width = viewport.width;
-                                canvas.className = "max-w-full h-auto bg-white shadow-xl rounded shrink-0";
-                                viewer.appendChild(canvas);
-                                
-                                const renderContext = { canvasContext: context, viewport: viewport };
-                                await page.render(renderContext).promise;
-                            }
-                            AppState.documentText = fullExtractedText;
-                        } catch(err) {
-                            viewer.innerHTML = `<div class="text-red-400 p-4 text-center mt-10"><i class="ph ph-warning text-4xl mb-2"></i><p>Error rendering PDF: ${err.message}</p></div>`;
-                        }
-                    };
-                    fileReader.readAsArrayBuffer(file);
-                } 
-                else if (ext === 'xlsx') {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, {type: 'array'});
-                        let fullText = "";
-                        
-                        // Extract text from all sheets into CSV format for the model
-                        workbook.SheetNames.forEach(sheetName => {
-                            const worksheet = workbook.Sheets[sheetName];
-                            const csv = XLSX.utils.sheet_to_csv(worksheet);
-                            if (csv.trim()) {
-                                fullText += `--- Sheet: ${sheetName} ---\n${csv}\n\n`;
-                            }
-                        });
-                        
-                        AppState.documentText = fullText; 
-                        
-                        const pre = document.createElement('pre');
-                        pre.className = 'text-gray-300 text-sm font-mono p-4 w-full h-full overflow-auto whitespace-pre-wrap text-left bg-app-bg';
-                        pre.textContent = fullText.substring(0, 15000) + (fullText.length > 15000 ? '\n\n...[Truncated for UI performance. Full file in memory]...' : '');
-                        container.appendChild(pre);
-                    };
-                    reader.readAsArrayBuffer(file);
-                }
-                else if (['txt', 'md', 'json', 'csv', 'xml'].includes(ext)) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        AppState.documentText = e.target.result; // Store text for Gemini
-                        const pre = document.createElement('pre');
-                        pre.className = 'text-gray-300 text-sm font-mono p-4 w-full h-full overflow-auto whitespace-pre-wrap text-left bg-app-bg';
-                        pre.textContent = e.target.result.substring(0, 15000) + (e.target.result.length > 15000 ? '\n\n...[Truncated for UI performance. Full file in memory]...' : '');
-                        container.appendChild(pre);
-                    };
-                    reader.readAsText(file);
-                }
-                else {
-                    container.innerHTML = `<div class="text-center p-6"><i class="ph ph-file-text text-6xl text-app-textMuted mb-4 block"></i><p class="text-white font-medium">${file.name}</p><p class="text-sm text-app-textMuted mt-2">Document loaded into secure extraction engine.</p></div>`;
-                }
             }
         };
 
@@ -1081,10 +1187,25 @@
                     return;
                 }
 
-                if (!AppState.documentText) {
-                    alert("Document text is still being extracted. Please wait a moment and try again.");
+                const selectedSources = AppState.uploadedSources.filter(s => s.selected);
+                if (selectedSources.length === 0) {
+                    alert("Please select at least one source document from the list.");
                     return;
                 }
+
+                if (selectedSources.some(s => s.status === 'extracting')) {
+                    alert("Some selected documents are still being extracted. Please wait a moment.");
+                    return;
+                }
+
+                // Combine text for selected sources
+                let combinedText = "";
+                selectedSources.forEach(s => {
+                    combinedText += `\n\n--- START OF DOCUMENT: ${s.name} ---\n`;
+                    combinedText += s.text;
+                    combinedText += `\n--- END OF DOCUMENT: ${s.name} ---\n`;
+                });
+                AppState.documentText = combinedText;
 
                 AppState.status = 'analyzing';
                 const btn = document.getElementById('btn-analyze');
@@ -1098,7 +1219,7 @@
                 
                 pBar.classList.remove('hidden');
                 pText.classList.remove('hidden');
-                pText.innerText = "Sending document to Gemini 2.5 Flash...";
+                pText.innerText = "Sending document(s) to Gemini 2.5 Flash...";
                 pFill.style.width = `30%`;
 
                 try {
@@ -1204,7 +1325,7 @@
                     }
                 };
 
-                const prompt = "You are an elite cybersecurity VAPT report analyzer. Analyze the following document text and extract all vulnerabilities, compliance mappings, and remediation plans into the strictly requested JSON structure. If details are missing, infer intelligently based on the context, but prioritize factual extraction directly from the document content.";
+                const prompt = "You are an elite cybersecurity VAPT report analyzer. Analyze the following document text and extract all vulnerabilities, compliance mappings, and remediation plans into the strictly requested JSON structure. If details are missing, infer intelligently based on the context, but prioritize factual extraction directly from the document content. Support aggregating from multiple combined documents if applicable.";
                 
                 const payload = {
                     generationConfig: {
@@ -1216,7 +1337,7 @@
                         role: "user",
                         parts: [
                             { text: prompt },
-                            { text: "DOCUMENT CONTENT:\n" + text.substring(0, 50000) } // Cap text length to avoid limits
+                            { text: "DOCUMENT CONTENT:\n" + text.substring(0, 150000) } // Cap text length
                         ]
                     }]
                 };
@@ -1261,7 +1382,7 @@
                     UI.switchView('vulnerabilities');
                 }, 500);
                 
-                ChatHandler.appendMessage('system', "Report analysis complete. Extracted data has perfectly populated the workspace. You can now ask me advanced questions about this specific document.");
+                ChatHandler.appendMessage('system', "Report analysis complete. Extracted data has perfectly populated the workspace. You can now ask me advanced questions about these specific documents.");
             }
         };
 
