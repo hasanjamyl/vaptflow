@@ -875,7 +875,7 @@
                 });
             },
 
-            populateTables: () => {
+            populateTables: (event) => {
                 const tbody = document.getElementById('vuln-table-body');
                 tbody.innerHTML = '';
                 
@@ -906,7 +906,7 @@
 
                 // Only re-populate these if we aren't just filtering the table
                 // This is a small optimization so typing in the search bar doesn't rebuild the whole DOM
-                if(arguments.length === 0 || (arguments[0] && !arguments[0].target)) {
+                if(!event || !event.target) {
                     UI.populateRemediation();
                     UI.populateCompliance();
                     UI.populateExecSummary();
