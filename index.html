@@ -900,6 +900,9 @@
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-app-border/30 transition-colors cursor-pointer";
                     tr.onclick = () => UI.openModal(f);
+                    
+                    const portStr = f.port ? `:${f.port}` : '';
+                    const assetStr = f.asset ? `${f.asset}${portStr}` : 'N/A';
 
                     tr.innerHTML = `
                         <td class="p-3 text-sm font-mono text-white whitespace-nowrap">${f.id || 'N/A'}</td>
@@ -908,14 +911,13 @@
                             <span class="px-2 py-1 text-xs font-bold uppercase rounded border ${sevClasses}">${f.severity || 'Info'}</span>
                         </td>
                         <td class="p-3 text-sm text-gray-300 font-mono">${f.cvss || 'N/A'}</td>
-                        <td class="p-3 text-sm text-gray-300 font-mono">${f.asset || 'N/A'}:${f.port || ''}</td>
+                        <td class="p-3 text-sm text-gray-300 font-mono">${assetStr}</td>
                         <td class="p-3 text-sm text-app-accent font-mono">${f.cve || 'N/A'}</td>
                     `;
                     tbody.appendChild(tr);
                 });
 
                 // Only re-populate these if we aren't just filtering the table
-                // This is a small optimization so typing in the search bar doesn't rebuild the whole DOM
                 if(!event || !event.target) {
                     UI.populateRemediation();
                     UI.populateCompliance();
@@ -1028,7 +1030,10 @@
                 AppState.currentFindingId = finding.id;
                 document.getElementById('modal-title').innerText = finding.title || 'Finding Detail';
                 document.getElementById('modal-id').innerText = finding.id || 'N/A';
-                document.getElementById('modal-asset').innerText = `${finding.asset || 'N/A'}:${finding.port || ''}`;
+                
+                const portStr = finding.port ? `:${finding.port}` : '';
+                document.getElementById('modal-asset').innerText = finding.asset ? `${finding.asset}${portStr}` : 'N/A';
+                
                 document.getElementById('modal-cvss').innerText = finding.cvss || 'N/A';
                 document.getElementById('modal-cve').innerText = finding.cve || 'N/A';
                 document.getElementById('modal-desc').innerText = finding.desc || 'No description provided.';
@@ -1057,24 +1062,31 @@
                 } else {
                     phases.forEach(p => {
                         let itemsHtml = '';
-                        if(p.actions) {
+                        const phaseName = p.phaseName || 'Remediation Phase';
+                        const phaseDesc = p.description || '';
+                        
+                        if(p.actions && p.actions.length > 0) {
                             p.actions.forEach(a => {
+                                const actionTitle = a.title || 'Action Required';
+                                const actionDetail = a.detail || '';
                                 itemsHtml += `
                                     <li class="flex items-start gap-3 bg-app-bg p-3 rounded border border-app-border">
                                         <i class="ph-bold ph-check-circle text-gray-600 mt-0.5"></i>
                                         <div>
-                                            <strong class="text-white text-sm block">${a.title || 'Action Required'}</strong>
-                                            <span class="text-xs text-gray-400">${a.detail || ''}</span>
+                                            <strong class="text-white text-sm block">${actionTitle}</strong>
+                                            <span class="text-xs text-gray-400">${actionDetail}</span>
                                         </div>
                                     </li>
                                 `;
                             });
+                        } else {
+                            itemsHtml = '<li class="text-xs text-gray-500">No specific actions detailed for this phase.</li>';
                         }
                         
                         html += `
                             <div class="bg-app-panel border border-app-border rounded-xl p-5 mb-4">
-                                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2"><i class="ph-fill ph-warning-circle text-app-accent"></i> ${p.phaseName || 'Remediation Phase'}</h3>
-                                <p class="text-sm text-app-textMuted mb-4">${p.description || ''}</p>
+                                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2"><i class="ph-fill ph-warning-circle text-app-accent"></i> ${phaseName}</h3>
+                                <p class="text-sm text-app-textMuted mb-4">${phaseDesc}</p>
                                 <ul class="space-y-3">
                                     ${itemsHtml}
                                 </ul>
@@ -1086,23 +1098,27 @@
             },
 
             populateCompliance: () => {
-                const comp = AppState.reportData?.compliance || { owaspScore: "N/A", isoGaps: 0, soc2Readiness: "N/A", nistViolations: 0, mappings: [] };
+                const comp = AppState.reportData?.compliance || {};
+                const owaspScore = comp.owaspScore || "N/A";
+                const isoGaps = comp.isoGaps !== undefined && comp.isoGaps !== null ? comp.isoGaps : "N/A";
+                const soc2Readiness = comp.soc2Readiness || "N/A";
+                const nistViolations = comp.nistViolations !== undefined && comp.nistViolations !== null ? comp.nistViolations : "N/A";
                 
                 const stats = `
                     <div class="bg-app-panel border border-app-border p-4 rounded-lg flex flex-col justify-center items-center">
-                        <span class="text-3xl font-bold text-white mb-1">${comp.owaspScore}</span>
+                        <span class="text-3xl font-bold text-white mb-1">${owaspScore}</span>
                         <span class="text-xs text-app-textMuted uppercase tracking-wider">OWASP Alignment</span>
                     </div>
                     <div class="bg-app-panel border border-app-border p-4 rounded-lg flex flex-col justify-center items-center">
-                        <span class="text-3xl font-bold text-white mb-1">${comp.isoGaps}</span>
+                        <span class="text-3xl font-bold text-white mb-1">${isoGaps}</span>
                         <span class="text-xs text-app-textMuted uppercase tracking-wider">ISO 27001 Gaps</span>
                     </div>
                     <div class="bg-app-panel border border-app-border p-4 rounded-lg flex flex-col justify-center items-center">
-                        <span class="text-3xl font-bold text-white mb-1">${comp.soc2Readiness}</span>
+                        <span class="text-3xl font-bold text-white mb-1">${soc2Readiness}</span>
                         <span class="text-xs text-app-textMuted uppercase tracking-wider">SOC 2 Readiness</span>
                     </div>
                     <div class="bg-app-panel border border-app-border p-4 rounded-lg flex flex-col justify-center items-center">
-                        <span class="text-3xl font-bold text-white mb-1">${comp.nistViolations}</span>
+                        <span class="text-3xl font-bold text-white mb-1">${nistViolations}</span>
                         <span class="text-xs text-app-textMuted uppercase tracking-wider">NIST Violations</span>
                     </div>
                 `;
@@ -1114,31 +1130,38 @@
                     comp.mappings.forEach(m => {
                         tbody.innerHTML += `
                             <tr class="hover:bg-app-border/20">
-                                <td class="px-4 py-3 font-mono text-xs text-white">${m.findingId || '-'}</td>
-                                <td class="px-4 py-3 text-xs text-gray-300">${m.owasp || '-'}</td>
-                                <td class="px-4 py-3 text-xs text-gray-300">${m.iso || '-'}</td>
-                                <td class="px-4 py-3 text-xs text-gray-300">${m.nist || '-'}</td>
-                                <td class="px-4 py-3 text-xs text-gray-300">${m.soc2 || '-'}</td>
+                                <td class="px-4 py-3 font-mono text-xs text-white">${m.findingId || 'N/A'}</td>
+                                <td class="px-4 py-3 text-xs text-gray-300">${m.owasp || 'N/A'}</td>
+                                <td class="px-4 py-3 text-xs text-gray-300">${m.iso || 'N/A'}</td>
+                                <td class="px-4 py-3 text-xs text-gray-300">${m.nist || 'N/A'}</td>
+                                <td class="px-4 py-3 text-xs text-gray-300">${m.soc2 || 'N/A'}</td>
                             </tr>
                         `;
                     });
+                } else {
+                     tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-app-textMuted text-xs">No framework mappings generated.</td></tr>`;
                 }
             },
 
             populateExecSummary: () => {
-                const exec = AppState.reportData?.executiveSummary || { riskRating: "Unknown", businessImpact: "No executive summary extracted from document." };
+                const exec = AppState.reportData?.executiveSummary || {};
+                const riskRating = exec.riskRating || "Unknown";
+                const businessImpact = exec.businessImpact || "No executive summary extracted or generated from the document.";
                 
                 let crits=0, highs=0, meds=0;
                 AppState.findings.forEach(f => {
-                    if(f.severity === 'Critical') crits++;
-                    if(f.severity === 'High') highs++;
-                    if(f.severity === 'Medium') meds++;
+                    const sev = (f.severity || '').toLowerCase();
+                    if(sev === 'critical') crits++;
+                    if(sev === 'high') highs++;
+                    if(sev === 'medium') meds++;
                 });
+                
+                const riskColor = riskRating.toLowerCase() === 'critical' || riskRating.toLowerCase() === 'high' ? 'text-red-400' : (riskRating.toLowerCase() === 'medium' ? 'text-amber-400' : 'text-emerald-400');
 
                 const html = `
                     <div class="flex items-center justify-between bg-app-panel border border-app-border rounded-xl p-6">
                         <div>
-                            <h2 class="text-2xl font-bold text-white mb-1">Overall Risk Rating: <span class="${exec.riskRating === 'Critical' || exec.riskRating === 'High' ? 'text-red-400' : 'text-amber-400'}">${exec.riskRating}</span></h2>
+                            <h2 class="text-2xl font-bold text-white mb-1">Overall Risk Rating: <span class="${riskColor}">${riskRating}</span></h2>
                             <p class="text-sm text-app-textMuted">Assessment derived from contextual aggregation of asset value and exploit probability.</p>
                         </div>
                         <div class="flex gap-2">
@@ -1158,29 +1181,33 @@
                     </div>
                     <div class="space-y-4">
                         <h3 class="text-lg font-semibold text-white border-b border-app-border pb-2">Business Impact Analysis</h3>
-                        <p class="text-sm text-gray-300 leading-relaxed">${exec.businessImpact}</p>
+                        <p class="text-sm text-gray-300 leading-relaxed">${businessImpact}</p>
                     </div>
                 `;
                 document.getElementById('exec-summary-content').innerHTML = html;
             },
 
             populateTechSummary: () => {
-                 const tech = AppState.reportData?.technicalSummary || { rootCauseTitle: "N/A", rootCauseDesc: "No technical details extracted.", vulnerableCodePattern: "", secureImplementation: "" };
+                 const tech = AppState.reportData?.technicalSummary || {};
+                 const rootCauseTitle = tech.rootCauseTitle || "N/A";
+                 const rootCauseDesc = tech.rootCauseDesc || "No technical details extracted or generated.";
+                 const vulnerableCodePattern = tech.vulnerableCodePattern || "";
+                 const secureImplementation = tech.secureImplementation || "";
                  
                  const html = `
                     <div class="bg-app-panel border border-app-border rounded-xl overflow-hidden">
                         <div class="p-4 bg-app-bg border-b border-app-border">
                             <h3 class="font-mono text-sm text-app-accent flex items-center gap-2">
-                                <i class="ph ph-terminal"></i> Highlighted Root Cause: ${tech.rootCauseTitle}
+                                <i class="ph ph-terminal"></i> Highlighted Root Cause: ${rootCauseTitle}
                             </h3>
                         </div>
                         <div class="p-5 space-y-4">
-                            <p class="text-sm text-gray-300">${tech.rootCauseDesc}</p>
-                            ${tech.vulnerableCodePattern ? `
-                            <div class="bg-[#0B0F19] rounded border border-app-border p-3 font-mono text-xs text-red-400 overflow-x-auto whitespace-pre-wrap">${tech.vulnerableCodePattern}</div>` : ''}
-                            ${tech.secureImplementation ? `
+                            <p class="text-sm text-gray-300">${rootCauseDesc}</p>
+                            ${vulnerableCodePattern ? `
+                            <div class="bg-[#0B0F19] rounded border border-app-border p-3 font-mono text-xs text-red-400 overflow-x-auto whitespace-pre-wrap">${vulnerableCodePattern}</div>` : ''}
+                            ${secureImplementation ? `
                             <h4 class="text-xs font-semibold text-white uppercase mt-4">Suggested Remediation Snippet</h4>
-                            <div class="bg-[#0B0F19] rounded border border-app-border p-3 font-mono text-xs text-emerald-400 overflow-x-auto whitespace-pre-wrap">${tech.secureImplementation}</div>` : ''}
+                            <div class="bg-[#0B0F19] rounded border border-app-border p-3 font-mono text-xs text-emerald-400 overflow-x-auto whitespace-pre-wrap">${secureImplementation}</div>` : ''}
                         </div>
                     </div>
                 `;
@@ -1201,7 +1228,7 @@
                 AppState.findings.forEach(f => {
                     if (f.status === 'False Positive') return;
 
-                    const sevClass = f.severity === 'Critical' ? 'bg-red-500' : f.severity === 'High' ? 'bg-orange-500' : 'bg-amber-500';
+                    const sevClass = (f.severity || '').toLowerCase() === 'critical' ? 'bg-red-500' : (f.severity || '').toLowerCase() === 'high' ? 'bg-orange-500' : 'bg-amber-500';
                     const card = `
                         <div class="bg-app-bg border border-app-border rounded p-3 cursor-pointer hover:border-app-accent transition-colors" onclick="UI.openModalById('${f.id}')">
                             <div class="flex justify-between items-start mb-2">
@@ -1589,7 +1616,7 @@
                             items: {
                                 type: "OBJECT",
                                 properties: {
-                                    id: { type: "STRING", description: "Unique identifier following the pattern VAPT-CWE-{CWE_NUMBER}-{THREE_DIGIT_SEQUENCE} (e.g. VAPT-CWE-89-001)" },
+                                    id: { type: "STRING", description: "Unique identifier strictly formatted as VAPT-CWE-{CWE_NUMBER}-{THREE_DIGIT_SEQUENCE} (e.g. VAPT-CWE-89-001). Never leave empty." },
                                     title: { type: "STRING" },
                                     severity: { type: "STRING", description: "Must be: Critical, High, Medium, Low, or Informational" },
                                     cvss: { type: "STRING" },
@@ -1606,7 +1633,7 @@
                             type: "OBJECT",
                             properties: {
                                 riskRating: { type: "STRING", description: "Critical, High, Medium, or Low" },
-                                businessImpact: { type: "STRING" }
+                                businessImpact: { type: "STRING", description: "A detailed summary of the business impact." }
                             }
                         },
                         remediationPhases: {
@@ -1663,23 +1690,25 @@
                     }
                 };
 
-                const prompt = `You are a strictly professional and highly accurate cybersecurity VAPT report analyzer. Analyze the following document text and extract all vulnerabilities into the strictly requested JSON structure. 
-                
-CRITICAL INSTRUCTIONS:
-1. FINDINGS: Ensure every finding has a uniquely generated ID following the exact pattern 'VAPT-CWE-{CWE_NUMBER}-{THREE_DIGIT_SEQUENCE}' (e.g., VAPT-CWE-89-001). Determine the most accurate Standard CWE ID for the vulnerability type. Increment the 3-digit sequence for multiple findings of the same CWE.
-2. SYNTHESIZE SECTIONS: If the document lacks an explicit Executive Summary, Technical Summary, Compliance Mapping, or Remediation Plan, YOU MUST GENERATE AND INFER THEM based on the aggregate vulnerabilities you extracted. Do not leave these sections empty.
-   - Executive Summary: Calculate overall risk and business impact based on the severities found.
-   - Technical Summary: Identify the most common or critical root cause from the findings.
-   - Compliance: Map the specific findings to OWASP Top 10, ISO 27001, NIST SP 800-53, and SOC 2.
-   - Remediation Phases: Group the recommended fixes into logical phases (e.g., Immediate/Critical, Short-term, Long-term).
+                const prompt = `You are an elite cybersecurity VAPT report analyzer. Your job is to thoroughly read the provided document and extract ALL vulnerabilities, compliance data, and remediation steps into the requested JSON schema.
+        
+CRITICAL RULES:
+1. EXTRACT EVERYTHING: Find every single vulnerability mentioned in the text. Do not miss any. If the document is a scan report, list all findings.
+2. IDs: Generate a unique ID for each finding using the exact format 'VAPT-CWE-{CWE_NUMBER}-{THREE_DIGIT_SEQUENCE}' (e.g., VAPT-CWE-79-001).
+3. FILL ALL FIELDS: You MUST populate every field in the JSON schema. Never leave 'cvss', 'cve', 'asset', 'desc', or 'remediation' blank. If a specific value isn't in the text, infer a highly accurate professional placeholder based on the vulnerability type.
+4. SYNTHESIZE MISSING SECTIONS: If the document lacks an explicit Executive Summary, Technical Summary, Compliance Mapping, or Remediation Plan, YOU MUST GENERATE THEM based on the vulnerabilities you found. 
+   - 'businessImpact' must contain a detailed summary.
+   - 'remediationPhases' must contain at least 2 phases with actionable items.
+   - 'compliance' must map the findings to OWASP, ISO, NIST, and SOC2.
+   - 'technicalSummary' must describe the primary root cause.
 
-Provide consistent, deterministic output.`;
+Do not return null, undefined, or empty strings for any property. Provide consistent, deterministic output.`;
                 
                 const payload = {
                     generationConfig: {
                         responseMimeType: "application/json",
                         responseSchema: jsonSchema,
-                        temperature: 0.0,
+                        temperature: 0.2,
                         topK: 1,
                         topP: 0.1
                     },
