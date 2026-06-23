@@ -700,6 +700,8 @@
                 fileInput.addEventListener('change', (e) => {
                     if (e.target.files.length > 0) {
                         FileHandler.processFiles(e.target.files);
+                        // Reset the input value so the same file can trigger a change event again
+                        e.target.value = '';
                     }
                 });
 
