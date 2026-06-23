@@ -429,10 +429,10 @@
                             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 shrink-0 gap-4">
                                 <h2 class="text-xl font-semibold text-white">Action Item Board</h2>
                                 <div class="flex gap-2 w-full sm:w-auto">
-                                    <button class="flex-1 sm:flex-none bg-[#0052CC] hover:bg-[#0047b3] text-white px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors">
+                                    <button id="btn-push-jira" class="flex-1 sm:flex-none bg-[#0052CC] hover:bg-[#0047b3] text-white px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors">
                                         <i class="ph ph-kanban"></i> Push to Jira
                                     </button>
-                                    <button class="flex-1 sm:flex-none bg-app-panel border border-app-border hover:bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors">
+                                    <button id="btn-export-xlsx" class="flex-1 sm:flex-none bg-app-panel border border-app-border hover:bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors">
                                         <i class="ph ph-file-xls"></i> Export XLSX
                                     </button>
                                 </div>
@@ -770,6 +770,10 @@
                 
                 // Export CSV
                 document.getElementById('btn-export-csv')?.addEventListener('click', UI.exportToCSV);
+                
+                // Action Board Buttons
+                document.getElementById('btn-push-jira')?.addEventListener('click', UI.pushToJira);
+                document.getElementById('btn-export-xlsx')?.addEventListener('click', UI.exportToXLSX);
             },
 
             updateKeyStatus: () => {
@@ -832,6 +836,10 @@
                     iconBg.className = 'w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mb-4';
                     icon.className = 'ph-fill ph-warning-circle text-3xl text-amber-500';
                     btn.className = 'w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 rounded-lg transition-colors';
+                } else if (type === 'success') {
+                    iconBg.className = 'w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mb-4';
+                    icon.className = 'ph-fill ph-check-circle text-3xl text-emerald-500';
+                    btn.className = 'w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg transition-colors';
                 } else {
                     iconBg.className = 'w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-4';
                     icon.className = 'ph-fill ph-warning text-3xl text-red-500';
@@ -954,6 +962,64 @@
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+            },
+
+            pushToJira: () => {
+                const actionItems = AppState.findings.filter(f => f.status !== 'False Positive');
+                if (actionItems.length === 0) {
+                    UI.showError("Push Failed", "No action items available to push to Jira. Run an analysis first.", "warning");
+                    return;
+                }
+                
+                const btn = document.getElementById('btn-push-jira');
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<span class="loader w-4 h-4 border-2"></span> Syncing...';
+                btn.disabled = true;
+                
+                // Simulate an API call delay for the mock Jira integration
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                    UI.showError("Jira Sync Complete", `Successfully synced ${actionItems.length} action items to your integrated Jira project board.`, "success");
+                }, 1200);
+            },
+
+            exportToXLSX: () => {
+                const actionItems = AppState.findings.filter(f => f.status !== 'False Positive');
+                if (actionItems.length === 0) {
+                    UI.showError("Export Failed", "No action items available to export. Run an analysis first.", "warning");
+                    return;
+                }
+
+                // Prepare data specifically formatted for the Excel Workbook
+                const wsData = [
+                    ['Finding ID', 'Title', 'Severity', 'CVSS', 'Asset Target', 'CVE', 'Status', 'Recommended Remediation']
+                ];
+
+                actionItems.forEach(f => {
+                    wsData.push([
+                        f.id || 'N/A',
+                        f.title || 'Untitled',
+                        f.severity || 'Info',
+                        f.cvss || 'N/A',
+                        f.asset || 'N/A',
+                        f.cve || 'N/A',
+                        f.status || 'Open',
+                        f.remediation || 'N/A'
+                    ]);
+                });
+
+                // Create the Workbook and Worksheet using SheetJS
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                
+                // Style columns width for better readability
+                ws['!cols'] = [
+                    {wch: 15}, {wch: 40}, {wch: 12}, {wch: 10}, {wch: 35}, {wch: 20}, {wch: 15}, {wch: 80}
+                ];
+
+                XLSX.utils.book_append_sheet(wb, ws, "Action Board Items");
+                XLSX.writeFile(wb, "VaptFlow_Action_Board.xlsx");
             },
 
             openModal: (finding) => {
