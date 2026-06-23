@@ -558,8 +558,8 @@
                 </div>
             </div>
             <div class="p-4 border-t border-app-border bg-app-bg flex justify-end gap-3">
-                <button class="px-4 py-2 text-sm text-white bg-app-panel border border-app-border rounded hover:bg-gray-800 transition-colors">Mark False Positive</button>
-                <button class="px-4 py-2 text-sm text-white bg-app-accent hover:bg-app-accentHover rounded transition-colors flex items-center gap-2">
+                <button id="btn-mark-fp" class="px-4 py-2 text-sm text-white bg-app-panel border border-app-border rounded hover:bg-gray-800 transition-colors">Mark False Positive</button>
+                <button id="btn-add-action" class="px-4 py-2 text-sm text-white bg-app-accent hover:bg-app-accentHover rounded transition-colors flex items-center gap-2">
                     <i class="ph ph-plus"></i> Add to Action Board
                 </button>
             </div>
@@ -595,7 +595,8 @@
             reportData: null, // Holds the parsed JSON returned from Gemini
             status: 'idle', // idle, loaded, analyzing, analyzed
             currentView: 'empty',
-            findings: []
+            findings: [],
+            currentFindingId: null
         };
 
         /**
@@ -731,6 +732,34 @@
                     document.getElementById('vuln-modal').classList.add('hidden');
                 });
 
+                // Mark False Positive
+                document.getElementById('btn-mark-fp').addEventListener('click', () => {
+                    if (AppState.currentFindingId) {
+                        const finding = AppState.findings.find(f => f.id === AppState.currentFindingId);
+                        if (finding) {
+                            finding.status = 'False Positive';
+                            UI.populateTables();
+                            document.getElementById('vuln-modal').classList.add('hidden');
+                        }
+                    }
+                });
+
+                // Add to Action Board
+                document.getElementById('btn-add-action').addEventListener('click', () => {
+                    if (AppState.currentFindingId) {
+                        const finding = AppState.findings.find(f => f.id === AppState.currentFindingId);
+                        if (finding) {
+                            // Default to Open if it was excluded or undefined
+                            if (finding.status === 'False Positive' || !finding.status) {
+                                finding.status = 'Open';
+                            }
+                            UI.populateTables();
+                            document.getElementById('vuln-modal').classList.add('hidden');
+                            UI.switchView('tracker');
+                        }
+                    }
+                });
+
                 // Error Modal Close
                 document.getElementById('btn-close-error').addEventListener('click', () => {
                     document.getElementById('error-modal').classList.add('hidden');
@@ -848,6 +877,7 @@
             },
 
             openModal: (finding) => {
+                AppState.currentFindingId = finding.id;
                 document.getElementById('modal-title').innerText = finding.title || 'Finding Detail';
                 document.getElementById('modal-id').innerText = finding.id || 'N/A';
                 document.getElementById('modal-asset').innerText = `${finding.asset || 'N/A'}:${finding.port || ''}`;
@@ -1002,19 +1032,31 @@
                 document.getElementById('tech-summary-content').innerHTML = html;
             },
 
+            openModalById: (id) => {
+                const finding = AppState.findings.find(f => f.id === id);
+                if (finding) {
+                    UI.openModal(finding);
+                }
+            },
+
             populateTracker: () => {
                 const todo = document.getElementById('board-todo');
                 const inprog = document.getElementById('board-inprogress');
+                const verify = document.getElementById('board-verify');
                 
-                todo.innerHTML = '';
-                inprog.innerHTML = '';
+                if (todo) todo.innerHTML = '';
+                if (inprog) inprog.innerHTML = '';
+                if (verify) verify.innerHTML = '';
 
-                let cTodo=0, cProg=0;
+                let cTodo=0, cProg=0, cVerify=0;
 
                 AppState.findings.forEach(f => {
+                    // Hide false positives from the Action Board completely
+                    if (f.status === 'False Positive') return;
+
                     const sevClass = f.severity === 'Critical' ? 'bg-red-500' : f.severity === 'High' ? 'bg-orange-500' : 'bg-amber-500';
                     const card = `
-                        <div class="bg-app-bg border border-app-border rounded p-3 cursor-grab hover:border-gray-500 transition-colors">
+                        <div class="bg-app-bg border border-app-border rounded p-3 cursor-pointer hover:border-app-accent transition-colors" onclick="UI.openModalById('${f.id}')">
                             <div class="flex justify-between items-start mb-2">
                                 <span class="text-xs font-mono text-gray-400">${f.id || 'N/A'}</span>
                                 <span class="w-2 h-2 rounded-full ${sevClass}"></span>
@@ -1026,17 +1068,24 @@
                             </div>
                         </div>
                     `;
-                    if(f.status === 'Open') {
-                        todo.innerHTML += card;
-                        cTodo++;
+                    
+                    const stat = (f.status || 'Open').toLowerCase();
+                    if(stat === 'in progress') {
+                        if (inprog) { inprog.innerHTML += card; cProg++; }
+                    } else if (stat === 'resolved' || stat === 'verify' || stat === 'pending verification') {
+                        if (verify) { verify.innerHTML += card; cVerify++; }
                     } else {
-                        inprog.innerHTML += card;
-                        cProg++;
+                        if (todo) { todo.innerHTML += card; cTodo++; }
                     }
                 });
 
-                document.getElementById('count-todo').innerText = cTodo;
-                document.getElementById('count-inprogress').innerText = cProg;
+                const countTodo = document.getElementById('count-todo');
+                const countInprog = document.getElementById('count-inprogress');
+                const countVerify = document.getElementById('count-verify');
+
+                if (countTodo) countTodo.innerText = cTodo;
+                if (countInprog) countInprog.innerText = cProg;
+                if (countVerify) countVerify.innerText = cVerify;
             }
         };
 
