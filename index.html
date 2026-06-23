@@ -1663,7 +1663,17 @@
                     }
                 };
 
-                const prompt = "You are a strictly professional and highly accurate cybersecurity VAPT report analyzer. Analyze the following document text and extract all vulnerabilities, compliance mappings, and remediation plans into the strictly requested JSON structure. Provide consistent, deterministic output based solely on the provided text. If details are missing, infer intelligently based on the context, but prioritize factual extraction directly from the document content. Support aggregating from multiple combined documents if applicable. IMPORTANT: Ensure that every finding has a uniquely generated ID following the exact pattern 'VAPT-CWE-{CWE_NUMBER}-{THREE_DIGIT_SEQUENCE}'. Determine the most accurate Standard CWE ID for the vulnerability type. For example: SQL Injection (CWE-89) -> VAPT-CWE-89-001, Cross-Site Scripting (CWE-79) -> VAPT-CWE-79-001. Increment the 3-digit sequence for multiple findings of the same CWE.";
+                const prompt = `You are a strictly professional and highly accurate cybersecurity VAPT report analyzer. Analyze the following document text and extract all vulnerabilities into the strictly requested JSON structure. 
+                
+CRITICAL INSTRUCTIONS:
+1. FINDINGS: Ensure every finding has a uniquely generated ID following the exact pattern 'VAPT-CWE-{CWE_NUMBER}-{THREE_DIGIT_SEQUENCE}' (e.g., VAPT-CWE-89-001). Determine the most accurate Standard CWE ID for the vulnerability type. Increment the 3-digit sequence for multiple findings of the same CWE.
+2. SYNTHESIZE SECTIONS: If the document lacks an explicit Executive Summary, Technical Summary, Compliance Mapping, or Remediation Plan, YOU MUST GENERATE AND INFER THEM based on the aggregate vulnerabilities you extracted. Do not leave these sections empty.
+   - Executive Summary: Calculate overall risk and business impact based on the severities found.
+   - Technical Summary: Identify the most common or critical root cause from the findings.
+   - Compliance: Map the specific findings to OWASP Top 10, ISO 27001, NIST SP 800-53, and SOC 2.
+   - Remediation Phases: Group the recommended fixes into logical phases (e.g., Immediate/Critical, Short-term, Long-term).
+
+Provide consistent, deterministic output.`;
                 
                 const payload = {
                     generationConfig: {
