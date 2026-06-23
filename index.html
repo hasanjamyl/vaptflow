@@ -110,6 +110,12 @@
             background-color: rgba(59, 130, 246, 0.1) !important;
         }
 
+        /* Object viewer container */
+        #preview-container object {
+            border-radius: 0.375rem;
+            background-color: #ffffff; /* for PDF rendering contrast */
+        }
+
         /* Loading spinner */
         .loader {
             border: 3px solid #1F2937;
@@ -129,12 +135,6 @@
         .markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
         .markdown-body p { margin-bottom: 0.5em; }
         .markdown-body strong { color: #fff; }
-
-        /* Styling for select options to ensure readability */
-        select option {
-            background-color: #111827 !important; /* app-panel color */
-            color: #F3F4F6 !important; /* app-text color */
-        }
     </style>
 </head>
 <body class="antialiased selection:bg-app-accent selection:text-white">
@@ -150,8 +150,8 @@
                     <i class="ph-fill ph-shield-check text-2xl"></i>
                     <span class="font-bold text-lg tracking-wide text-white hidden sm:inline">VaptFlow</span>
                 </div>
-                <div class="h-6 w-px bg-app-border hidden md:block"></div>
-                <div class="hidden md:flex items-center space-x-2 text-sm">
+                <div class="h-6 w-px bg-app-border hidden sm:block"></div>
+                <div class="hidden sm:flex items-center space-x-2 text-sm">
                     <span class="text-app-textMuted">Workspace:</span>
                     <span class="font-medium px-2 py-1 bg-app-border rounded text-white max-w-[120px] md:max-w-[200px] truncate" id="header-workspace-name">Default Environment</span>
                 </div>
@@ -160,27 +160,27 @@
             <div class="flex items-center space-x-2 md:space-x-4">
                 <!-- Model Selection -->
                 <div class="flex items-center bg-app-bg rounded-lg border border-app-border">
-                    <select id="model-select" class="bg-transparent border-none outline-none text-[10px] md:text-sm text-white px-2 py-1 md:px-3 md:py-1.5 focus:ring-0 cursor-pointer">
-                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                        <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                    <select id="model-select" class="bg-transparent border-none outline-none text-[10px] md:text-sm text-white px-2 py-1 md:px-3 md:py-1.5 focus:ring-0 cursor-pointer rounded-lg">
+                        <option value="gemini-2.5-flash" class="bg-app-panel text-white">Gemini 2.5 Flash</option>
+                        <option value="gemini-2.5-pro" class="bg-app-panel text-white">Gemini 2.5 Pro</option>
                     </select>
                 </div>
 
                 <!-- API Key Management -->
-                <div class="flex items-center space-x-1 bg-app-bg px-2 py-1 md:py-1.5 rounded-lg border border-app-border">
-                    <i class="ph ph-key text-app-textMuted hidden lg:block"></i>
+                <div class="flex items-center space-x-1 md:space-x-2 bg-app-bg px-2 md:px-3 py-1.5 rounded-lg border border-app-border">
+                    <i class="ph ph-key text-app-textMuted hidden sm:block"></i>
                     <input type="password" id="api-key-input" placeholder="API key" 
-                        class="bg-transparent border-none outline-none text-[10px] md:text-sm w-16 sm:w-24 md:w-48 text-white placeholder-app-textMuted focus:ring-0">
-                    <div id="api-status-indicator" class="w-2 h-2 rounded-full bg-red-500 mx-1 shrink-0" title="Key not set"></div>
-                    <button id="btn-save-key" class="text-[10px] md:text-xs font-medium text-app-accent hover:text-app-accentHover transition-colors px-1 border-r border-app-border">Save</button>
-                    <button id="btn-clear-key" class="text-[10px] md:text-xs font-medium text-app-textMuted hover:text-white transition-colors pl-1">Clear</button>
+                        class="bg-transparent border-none outline-none text-xs md:text-sm w-20 sm:w-32 md:w-48 text-white placeholder-app-textMuted focus:ring-0">
+                    <div id="api-status-indicator" class="w-2 h-2 rounded-full bg-red-500 mx-1 md:mx-2" title="Key not set"></div>
+                    <button id="btn-save-key" class="text-xs font-medium text-app-accent hover:text-app-accentHover transition-colors px-1 md:px-2 border-r border-app-border">Save</button>
+                    <button id="btn-clear-key" class="text-xs font-medium text-app-textMuted hover:text-white transition-colors pl-1 md:pl-2">Clear</button>
                 </div>
                 
-                <button class="hidden lg:flex w-8 h-8 rounded-full bg-app-border items-center justify-center hover:bg-gray-700 transition-colors shrink-0">
+                <button class="hidden sm:flex w-8 h-8 rounded-full bg-app-border items-center justify-center hover:bg-gray-700 transition-colors">
                     <i class="ph ph-user text-white"></i>
                 </button>
 
-                <button id="btn-toggle-right" class="xl:hidden text-white p-1 hover:bg-gray-800 rounded relative shrink-0">
+                <button id="btn-toggle-right" class="xl:hidden text-white p-1 hover:bg-gray-800 rounded relative">
                     <i class="ph ph-chat-teardrop-text text-2xl"></i>
                     <span class="absolute top-1 right-1 w-2 h-2 bg-app-accent rounded-full border border-app-panel"></span>
                 </button>
@@ -249,11 +249,11 @@
                                 <div>
                                     <label class="block text-xs text-app-textMuted mb-1">Environment</label>
                                     <select id="meta-env" class="w-full bg-app-panel border border-app-border rounded px-2 py-1 text-sm text-white outline-none appearance-none">
-                                        <option value="Production">Production</option>
-                                        <option value="Staging">Staging</option>
-                                        <option value="Development">Development</option>
-                                        <option value="External">External</option>
-                                        <option value="Internal">Internal</option>
+                                        <option value="Production" class="bg-app-panel">Production</option>
+                                        <option value="Staging" class="bg-app-panel">Staging</option>
+                                        <option value="Development" class="bg-app-panel">Development</option>
+                                        <option value="External" class="bg-app-panel">External</option>
+                                        <option value="Internal" class="bg-app-panel">Internal</option>
                                     </select>
                                 </div>
                             </div>
@@ -333,21 +333,22 @@
                         <div class="h-full flex flex-col">
                             <!-- Filters -->
                             <div class="p-4 border-b border-app-border flex gap-3 bg-app-panel flex-wrap">
-                                <select class="bg-app-bg border border-app-border rounded text-sm px-3 py-1.5 text-white outline-none">
-                                    <option>All Severities</option>
-                                    <option>Critical</option>
-                                    <option>High</option>
-                                    <option>Medium</option>
-                                    <option>Low</option>
+                                <select id="filter-severity" class="bg-app-bg border border-app-border rounded text-sm px-3 py-1.5 text-white outline-none cursor-pointer">
+                                    <option value="All" class="bg-app-panel">All Severities</option>
+                                    <option value="Critical" class="bg-app-panel">Critical</option>
+                                    <option value="High" class="bg-app-panel">High</option>
+                                    <option value="Medium" class="bg-app-panel">Medium</option>
+                                    <option value="Low" class="bg-app-panel">Low</option>
                                 </select>
-                                <select class="bg-app-bg border border-app-border rounded text-sm px-3 py-1.5 text-white outline-none">
-                                    <option>All Statuses</option>
-                                    <option>Open</option>
-                                    <option>In Progress</option>
-                                    <option>Resolved</option>
+                                <select id="filter-status" class="bg-app-bg border border-app-border rounded text-sm px-3 py-1.5 text-white outline-none cursor-pointer">
+                                    <option value="All" class="bg-app-panel">All Statuses</option>
+                                    <option value="Open" class="bg-app-panel">Open</option>
+                                    <option value="In Progress" class="bg-app-panel">In Progress</option>
+                                    <option value="Resolved" class="bg-app-panel">Resolved</option>
+                                    <option value="False Positive" class="bg-app-panel">False Positive</option>
                                 </select>
-                                <input type="text" placeholder="Search findings, assets, CVEs..." class="bg-app-bg border border-app-border rounded text-sm px-3 py-1.5 text-white outline-none flex-1 min-w-[200px]">
-                                <button class="bg-app-border hover:bg-gray-700 text-white px-3 py-1.5 rounded text-sm flex items-center gap-2 transition-colors">
+                                <input type="text" id="filter-search" placeholder="Search findings, assets, CVEs..." class="bg-app-bg border border-app-border rounded text-sm px-3 py-1.5 text-white outline-none flex-1 min-w-[200px]">
+                                <button id="btn-export-csv" class="bg-app-border hover:bg-gray-700 text-white px-3 py-1.5 rounded text-sm flex items-center gap-2 transition-colors">
                                     <i class="ph ph-export"></i> Export CSV
                                 </button>
                             </div>
@@ -588,10 +589,10 @@
         const AppState = {
             apiKey: sessionStorage.getItem('vaptflow_gemini_key') || null,
             model: sessionStorage.getItem('vaptflow_gemini_model') || 'gemini-2.5-flash',
-            uploadedSources: [], // Holds objects for each uploaded file (NotebookLM style)
-            documentText: '', // Holds the combined extracted text to send to Gemini
-            reportData: null, // Holds the parsed JSON returned from Gemini
-            status: 'idle', // idle, loaded, analyzing, analyzed
+            uploadedSources: [], 
+            documentText: '', 
+            reportData: null, 
+            status: 'idle', 
             currentView: 'empty',
             findings: [],
             currentFindingId: null
@@ -747,7 +748,6 @@
                     if (AppState.currentFindingId) {
                         const finding = AppState.findings.find(f => f.id === AppState.currentFindingId);
                         if (finding) {
-                            // Default to Open if it was excluded or undefined
                             if (finding.status === 'False Positive' || !finding.status) {
                                 finding.status = 'Open';
                             }
@@ -762,6 +762,14 @@
                 document.getElementById('btn-close-error').addEventListener('click', () => {
                     document.getElementById('error-modal').classList.add('hidden');
                 });
+                
+                // Filters
+                document.getElementById('filter-severity')?.addEventListener('change', UI.populateTables);
+                document.getElementById('filter-status')?.addEventListener('change', UI.populateTables);
+                document.getElementById('filter-search')?.addEventListener('input', UI.populateTables);
+                
+                // Export CSV
+                document.getElementById('btn-export-csv')?.addEventListener('click', UI.exportToCSV);
             },
 
             updateKeyStatus: () => {
@@ -844,11 +852,40 @@
                 return map[severity] || map['Informational'];
             },
 
+            getFilteredFindings: () => {
+                const sevFilter = document.getElementById('filter-severity')?.value || 'All';
+                const statFilter = document.getElementById('filter-status')?.value || 'All';
+                const searchStr = (document.getElementById('filter-search')?.value || '').toLowerCase();
+
+                return AppState.findings.filter(f => {
+                    // Severity Filter
+                    if (sevFilter !== 'All' && (f.severity || 'Informational') !== sevFilter) return false;
+                    
+                    // Status Filter
+                    const status = f.status || 'Open';
+                    if (statFilter !== 'All' && status !== statFilter) return false;
+
+                    // Search Filter
+                    if (searchStr) {
+                        const searchTarget = `${f.id || ''} ${f.title || ''} ${f.asset || ''} ${f.cve || ''} ${f.desc || ''}`.toLowerCase();
+                        if (!searchTarget.includes(searchStr)) return false;
+                    }
+
+                    return true;
+                });
+            },
+
             populateTables: () => {
                 const tbody = document.getElementById('vuln-table-body');
                 tbody.innerHTML = '';
                 
-                AppState.findings.forEach(f => {
+                const filteredFindings = UI.getFilteredFindings();
+                
+                if (filteredFindings.length === 0 && AppState.status === 'analyzed') {
+                     tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-app-textMuted">No findings match the current filters.</td></tr>`;
+                }
+
+                filteredFindings.forEach(f => {
                     const sevClasses = UI.getSeverityColors(f.severity);
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-app-border/30 transition-colors cursor-pointer";
@@ -867,11 +904,56 @@
                     tbody.appendChild(tr);
                 });
 
-                UI.populateRemediation();
-                UI.populateCompliance();
-                UI.populateExecSummary();
-                UI.populateTechSummary();
-                UI.populateTracker();
+                // Only re-populate these if we aren't just filtering the table
+                // This is a small optimization so typing in the search bar doesn't rebuild the whole DOM
+                if(arguments.length === 0 || (arguments[0] && !arguments[0].target)) {
+                    UI.populateRemediation();
+                    UI.populateCompliance();
+                    UI.populateExecSummary();
+                    UI.populateTechSummary();
+                    UI.populateTracker();
+                }
+            },
+            
+            exportToCSV: () => {
+                if (AppState.findings.length === 0) {
+                    UI.showError("Export Failed", "No findings to export. Please run analysis first.", "warning");
+                    return;
+                }
+                
+                const filteredFindings = UI.getFilteredFindings();
+                
+                // Define CSV headers
+                let csvContent = "ID,Title,Severity,CVSS,Asset,Port,CVE,Status\n";
+                
+                filteredFindings.forEach(f => {
+                    // Properly escape fields containing commas or quotes
+                    const escapeStr = (str) => `"${(str || '').toString().replace(/"/g, '""')}"`;
+                    
+                    const row = [
+                        escapeStr(f.id),
+                        escapeStr(f.title),
+                        escapeStr(f.severity),
+                        escapeStr(f.cvss),
+                        escapeStr(f.asset),
+                        escapeStr(f.port),
+                        escapeStr(f.cve),
+                        escapeStr(f.status || 'Open')
+                    ].join(",");
+                    
+                    csvContent += row + "\n";
+                });
+                
+                // Create a blob and trigger download
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", "vaptflow_export.csv");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             },
 
             openModal: (finding) => {
@@ -889,6 +971,13 @@
                 badge.className = `px-2.5 py-1 text-xs font-bold uppercase rounded border ${UI.getSeverityColors(finding.severity)}`;
 
                 document.getElementById('vuln-modal').classList.remove('hidden');
+            },
+
+            openModalById: (id) => {
+                const finding = AppState.findings.find(f => f.id === id);
+                if (finding) {
+                    UI.openModal(finding);
+                }
             },
 
             populateRemediation: () => {
@@ -1030,13 +1119,6 @@
                 document.getElementById('tech-summary-content').innerHTML = html;
             },
 
-            openModalById: (id) => {
-                const finding = AppState.findings.find(f => f.id === id);
-                if (finding) {
-                    UI.openModal(finding);
-                }
-            },
-
             populateTracker: () => {
                 const todo = document.getElementById('board-todo');
                 const inprog = document.getElementById('board-inprogress');
@@ -1049,7 +1131,6 @@
                 let cTodo=0, cProg=0, cVerify=0;
 
                 AppState.findings.forEach(f => {
-                    // Hide false positives from the Action Board completely
                     if (f.status === 'False Positive') return;
 
                     const sevClass = f.severity === 'Critical' ? 'bg-red-500' : f.severity === 'High' ? 'bg-orange-500' : 'bg-amber-500';
