@@ -110,12 +110,6 @@
             background-color: rgba(59, 130, 246, 0.1) !important;
         }
 
-        /* Object viewer container */
-        #preview-container object {
-            border-radius: 0.375rem;
-            background-color: #ffffff; /* for PDF rendering contrast */
-        }
-
         /* Loading spinner */
         .loader {
             border: 3px solid #1F2937;
@@ -135,6 +129,12 @@
         .markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
         .markdown-body p { margin-bottom: 0.5em; }
         .markdown-body strong { color: #fff; }
+
+        /* Styling for select options to ensure readability */
+        select option {
+            background-color: #111827 !important; /* app-panel color */
+            color: #F3F4F6 !important; /* app-text color */
+        }
     </style>
 </head>
 <body class="antialiased selection:bg-app-accent selection:text-white">
@@ -150,29 +150,39 @@
                     <i class="ph-fill ph-shield-check text-2xl"></i>
                     <span class="font-bold text-lg tracking-wide text-white hidden sm:inline">VaptFlow</span>
                 </div>
-                <div class="h-6 w-px bg-app-border hidden sm:block"></div>
-                <div class="hidden sm:flex items-center space-x-2 text-sm">
+                <div class="h-6 w-px bg-app-border hidden md:block"></div>
+                <div class="hidden md:flex items-center space-x-2 text-sm">
                     <span class="text-app-textMuted">Workspace:</span>
                     <span class="font-medium px-2 py-1 bg-app-border rounded text-white max-w-[120px] md:max-w-[200px] truncate" id="header-workspace-name">Default Environment</span>
                 </div>
             </div>
 
             <div class="flex items-center space-x-2 md:space-x-4">
+                <!-- Model Selection -->
+                <div class="flex items-center bg-app-bg rounded-lg border border-app-border">
+                    <select id="model-select" class="bg-transparent border-none outline-none text-[10px] md:text-sm text-white px-2 py-1 md:px-3 md:py-1.5 focus:ring-0 cursor-pointer">
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                        <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    </select>
+                </div>
+
                 <!-- API Key Management -->
-                <div class="flex items-center space-x-1 md:space-x-2 bg-app-bg px-2 md:px-3 py-1.5 rounded-lg border border-app-border">
-                    <i class="ph ph-key text-app-textMuted hidden sm:block"></i>
+                <div class="flex items-center space-x-1 bg-app-bg px-2 py-1 md:py-1.5 rounded-lg border border-app-border">
+                    <i class="ph ph-key text-app-textMuted hidden lg:block"></i>
                     <input type="password" id="api-key-input" placeholder="API key" 
-                        class="bg-transparent border-none outline-none text-xs md:text-sm w-20 sm:w-32 md:w-48 text-white placeholder-app-textMuted focus:ring-0">
-                    <div id="api-status-indicator" class="w-2 h-2 rounded-full bg-red-500 mx-1 md:mx-2" title="Key not set"></div>
-                    <button id="btn-save-key" class="text-xs font-medium text-app-accent hover:text-app-accentHover transition-colors px-1 md:px-2 border-r border-app-border">Save</button>
-                    <button id="btn-clear-key" class="text-xs font-medium text-app-textMuted hover:text-white transition-colors pl-1 md:pl-2">Clear</button>
+                        class="bg-transparent border-none outline-none text-[10px] md:text-sm w-16 sm:w-24 md:w-48 text-white placeholder-app-textMuted focus:ring-0">
+                    <div id="api-status-indicator" class="w-2 h-2 rounded-full bg-red-500 mx-1 shrink-0" title="Key not set"></div>
+                    <button id="btn-save-key" class="text-[10px] md:text-xs font-medium text-app-accent hover:text-app-accentHover transition-colors px-1 border-r border-app-border">Save</button>
+                    <button id="btn-clear-key" class="text-[10px] md:text-xs font-medium text-app-textMuted hover:text-white transition-colors pl-1">Clear</button>
                 </div>
                 
-                <button class="hidden sm:flex w-8 h-8 rounded-full bg-app-border items-center justify-center hover:bg-gray-700 transition-colors">
+                <button class="hidden lg:flex w-8 h-8 rounded-full bg-app-border items-center justify-center hover:bg-gray-700 transition-colors shrink-0">
                     <i class="ph ph-user text-white"></i>
                 </button>
 
-                <button id="btn-toggle-right" class="xl:hidden text-white p-1 hover:bg-gray-800 rounded relative">
+                <button id="btn-toggle-right" class="xl:hidden text-white p-1 hover:bg-gray-800 rounded relative shrink-0">
                     <i class="ph ph-chat-teardrop-text text-2xl"></i>
                     <span class="absolute top-1 right-1 w-2 h-2 bg-app-accent rounded-full border border-app-panel"></span>
                 </button>
@@ -316,7 +326,6 @@
                     <!-- Preview View -->
                     <section id="view-preview" class="view-section p-4">
                         <div id="preview-container" class="w-full h-full rounded-lg border border-app-border overflow-hidden bg-[#2d333b] flex items-center justify-center">
-                            <!-- Injected object/iframe goes here -->
                             <p class="text-app-textMuted text-sm" id="preview-fallback">Processing document visualization...</p>
                         </div>
                     </section>
@@ -325,7 +334,7 @@
                     <section id="view-vulnerabilities" class="view-section bg-app-bg">
                         <div class="h-full flex flex-col">
                             <!-- Filters -->
-                            <div class="p-4 border-b border-app-border flex gap-3 bg-app-panel">
+                            <div class="p-4 border-b border-app-border flex gap-3 bg-app-panel flex-wrap">
                                 <select class="bg-app-bg border border-app-border rounded text-sm px-3 py-1.5 text-white outline-none">
                                     <option>All Severities</option>
                                     <option>Critical</option>
@@ -339,7 +348,7 @@
                                     <option>In Progress</option>
                                     <option>Resolved</option>
                                 </select>
-                                <input type="text" placeholder="Search findings, assets, CVEs..." class="bg-app-bg border border-app-border rounded text-sm px-3 py-1.5 text-white outline-none flex-1">
+                                <input type="text" placeholder="Search findings, assets, CVEs..." class="bg-app-bg border border-app-border rounded text-sm px-3 py-1.5 text-white outline-none flex-1 min-w-[200px]">
                                 <button class="bg-app-border hover:bg-gray-700 text-white px-3 py-1.5 rounded text-sm flex items-center gap-2 transition-colors">
                                     <i class="ph ph-export"></i> Export CSV
                                 </button>
@@ -557,19 +566,18 @@
         </div>
     </div>
 
-    <!-- Alert Message Modal -->
-    <div id="alert-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4 anim-fade-in">
-        <div class="bg-app-panel border border-app-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden">
+    <!-- Beautiful Error Modal -->
+    <div id="error-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-[#1e1e24] border border-gray-700 rounded-xl w-full max-w-md shadow-2xl overflow-hidden anim-fade-in">
             <div class="p-6 flex flex-col items-center text-center">
-                <div id="alert-icon-container" class="w-16 h-16 rounded-full flex items-center justify-center mb-4">
-                    <i id="alert-icon" class="text-3xl"></i>
+                <div id="error-modal-icon-bg" class="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
+                    <i id="error-modal-icon" class="ph-fill ph-warning text-3xl text-red-500"></i>
                 </div>
-                <h3 id="alert-title" class="text-xl font-bold text-white mb-2"></h3>
-                <p id="alert-message" class="text-sm text-gray-300 mb-6 leading-relaxed"></p>
-                <div id="alert-details-container" class="w-full bg-app-bg border border-app-border rounded p-3 mb-6 hidden">
-                    <p id="alert-details" class="text-xs text-app-textMuted font-mono text-left overflow-x-auto whitespace-pre-wrap"></p>
+                <h3 id="error-modal-title" class="text-xl font-bold text-white mb-2">Analysis Failed</h3>
+                <div class="bg-[#111116] border border-gray-800 rounded p-4 mb-6 w-full text-left font-mono text-sm text-gray-300">
+                    <p id="error-modal-message"></p>
                 </div>
-                <button id="close-alert-btn" class="w-full py-2.5 rounded-lg text-sm font-medium text-white transition-colors focus:outline-none"></button>
+                <button id="btn-close-error" class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg transition-colors">Dismiss</button>
             </div>
         </div>
     </div>
@@ -581,6 +589,7 @@
          */
         const AppState = {
             apiKey: sessionStorage.getItem('vaptflow_gemini_key') || null,
+            model: sessionStorage.getItem('vaptflow_gemini_model') || 'gemini-2.5-flash',
             uploadedSources: [], // Holds objects for each uploaded file (NotebookLM style)
             documentText: '', // Holds the combined extracted text to send to Gemini
             reportData: null, // Holds the parsed JSON returned from Gemini
@@ -595,6 +604,10 @@
         const UI = {
             init: () => {
                 UI.updateKeyStatus();
+                // Set the dropdown to the saved model or default
+                const modelSelect = document.getElementById('model-select');
+                if(modelSelect) modelSelect.value = AppState.model;
+
                 UI.attachEventListeners();
                 UI.setupMobileMenu();
                 // Ensure initial state is clear
@@ -654,6 +667,13 @@
                     UI.updateKeyStatus();
                 });
 
+                // Model Selection Logic
+                document.getElementById('model-select')?.addEventListener('change', (e) => {
+                    const selectedModel = e.target.value;
+                    AppState.model = selectedModel;
+                    sessionStorage.setItem('vaptflow_gemini_model', selectedModel);
+                });
+
                 // Drag and Drop
                 const dropzone = document.getElementById('dropzone');
                 const fileInput = document.getElementById('file-upload');
@@ -711,9 +731,9 @@
                     document.getElementById('vuln-modal').classList.add('hidden');
                 });
 
-                // Alert Modal Close
-                document.getElementById('close-alert-btn').addEventListener('click', () => {
-                    document.getElementById('alert-modal').classList.add('hidden');
+                // Error Modal Close
+                document.getElementById('btn-close-error').addEventListener('click', () => {
+                    document.getElementById('error-modal').classList.add('hidden');
                 });
             },
 
@@ -764,6 +784,28 @@
                 }
             },
 
+            showError: (title, message, type = 'error') => {
+                const modal = document.getElementById('error-modal');
+                const iconBg = document.getElementById('error-modal-icon-bg');
+                const icon = document.getElementById('error-modal-icon');
+                const btn = document.getElementById('btn-close-error');
+                
+                document.getElementById('error-modal-title').innerText = title;
+                document.getElementById('error-modal-message').innerText = message;
+                
+                if (type === 'warning') {
+                    iconBg.className = 'w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mb-4';
+                    icon.className = 'ph-fill ph-warning-circle text-3xl text-amber-500';
+                    btn.className = 'w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 rounded-lg transition-colors';
+                } else {
+                    iconBg.className = 'w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-4';
+                    icon.className = 'ph-fill ph-warning text-3xl text-red-500';
+                    btn.className = 'w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg transition-colors';
+                }
+                
+                modal.classList.remove('hidden');
+            },
+
             getSeverityColors: (severity) => {
                 const map = {
                     'Critical': 'bg-[#450a0a] text-[#fca5a5] border-[#7f1d1d]',
@@ -773,42 +815,6 @@
                     'Informational': 'bg-[#1e293b] text-[#cbd5e1] border-[#334155]'
                 };
                 return map[severity] || map['Informational'];
-            },
-
-            showAlert: (type, title, message, details = null) => {
-                const modal = document.getElementById('alert-modal');
-                const iconContainer = document.getElementById('alert-icon-container');
-                const icon = document.getElementById('alert-icon');
-                const titleEl = document.getElementById('alert-title');
-                const msgEl = document.getElementById('alert-message');
-                const detailsContainer = document.getElementById('alert-details-container');
-                const detailsEl = document.getElementById('alert-details');
-                const btn = document.getElementById('close-alert-btn');
-
-                titleEl.innerText = title;
-                msgEl.innerText = message;
-
-                if (details) {
-                    detailsEl.innerText = details;
-                    detailsContainer.classList.remove('hidden');
-                } else {
-                    detailsContainer.classList.add('hidden');
-                }
-
-                if (type === 'warning' || type === 'quota') {
-                    iconContainer.className = 'w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-amber-500/20 border border-amber-500/30';
-                    icon.className = 'ph-fill ph-warning-circle text-3xl text-amber-500';
-                    btn.className = 'w-full py-2.5 rounded-lg text-sm font-medium text-white transition-colors focus:outline-none bg-amber-600 hover:bg-amber-700';
-                    btn.innerText = 'Understood';
-                } else {
-                    // Default to Error
-                    iconContainer.className = 'w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-red-500/20 border border-red-500/30';
-                    icon.className = 'ph-fill ph-x-circle text-3xl text-red-500';
-                    btn.className = 'w-full py-2.5 rounded-lg text-sm font-medium text-white transition-colors focus:outline-none bg-red-600 hover:bg-red-700';
-                    btn.innerText = 'Dismiss';
-                }
-
-                modal.classList.remove('hidden');
             },
 
             populateTables: () => {
@@ -1045,34 +1051,13 @@
                 const files = Array.from(fileList).filter(f => validExts.includes(f.name.split('.').pop().toLowerCase()));
 
                 if (files.length === 0) {
-                    UI.showAlert('warning', 'Unsupported File Type', 'No supported file types found for VAPT report analysis. Please upload PDF, XLSX, CSV, JSON, XML, or MD files.');
+                    UI.showError("Invalid File Type", "No supported file types found for VAPT report analysis.");
                     return;
                 }
 
-                // Reset AppState completely when new files are uploaded
                 AppState.status = 'loaded';
-                AppState.reportData = null;
-                AppState.findings = [];
-                AppState.documentText = '';
-                
-                // Clear the table views
-                UI.populateTables();
-
                 document.getElementById('sources-list-container').classList.remove('hidden');
                 document.getElementById('metadata-section').classList.remove('hidden');
-
-                // Reset Analyze Button UI back to initial state
-                const btn = document.getElementById('btn-analyze');
-                btn.innerHTML = '<i class="ph ph-cpu"></i> Execute Heuristic Analysis';
-                btn.className = 'w-full mt-2 bg-app-accent hover:bg-app-accentHover text-white text-sm font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2';
-                btn.disabled = false;
-
-                // Reset Header Badges and Progress Bar
-                document.getElementById('center-badge').classList.add('hidden');
-                document.getElementById('analysis-progress-bar').classList.add('hidden');
-                document.getElementById('analysis-status-text').classList.add('hidden');
-                document.getElementById('progress-fill').style.width = '0%';
-                document.getElementById('analysis-status-text').innerText = 'Engine Idle';
 
                 // Process and add new files to the sources list
                 files.forEach(file => {
@@ -1308,18 +1293,18 @@
                 if (AppState.status !== 'loaded' && AppState.status !== 'analyzed') return;
 
                 if (!AppState.apiKey) {
-                    UI.showAlert('warning', 'API Key Required', 'Please provide a Gemini API Key in the top navigation bar to run AI Document Analysis.');
+                    UI.showError("Configuration Missing", "Please provide a Gemini API Key in the top navigation bar to run AI Document Analysis.", "error");
                     return;
                 }
 
                 const selectedSources = AppState.uploadedSources.filter(s => s.selected);
                 if (selectedSources.length === 0) {
-                    UI.showAlert('warning', 'No Sources Selected', 'Please select at least one source document from the list before executing analysis.');
+                    UI.showError("No Documents Selected", "Please select at least one source document from the list before analyzing.", "error");
                     return;
                 }
 
                 if (selectedSources.some(s => s.status === 'extracting')) {
-                    UI.showAlert('warning', 'Extraction in Progress', 'Some selected documents are still being extracted. Please wait a moment for the process to finish.');
+                    UI.showError("Extraction in Progress", "Some selected documents are still being extracted. Please wait a moment.", "warning");
                     return;
                 }
 
@@ -1346,7 +1331,7 @@
                 
                 pBar.classList.remove('hidden');
                 pText.classList.remove('hidden');
-                pText.innerText = "Sending document(s) to Gemini 2.5 Flash...";
+                pText.innerText = `Sending document(s) to ${AppState.model}...`;
                 pFill.style.width = `30%`;
 
                 try {
@@ -1358,11 +1343,14 @@
                     if (error.name === 'AbortError') {
                         console.log("Analysis cancelled by user.");
                         pText.innerText = "Analysis Cancelled";
-                    } else if (error.isQuota) {
-                        UI.showAlert('quota', 'API Quota Exceeded', 'You have exceeded your Gemini API usage limits. Please check your Google Cloud Console billing and quota settings.', error.message);
-                        pText.innerText = "Quota Exceeded";
+                    } else if (error.message.includes("503") || error.message.toLowerCase().includes("high demand") || error.message.toLowerCase().includes("overloaded")) {
+                         UI.showError("Model High Demand", `The ${AppState.model} model is currently experiencing an unusually high volume of traffic leading to temporary capacity constraints on Google's servers. Please try again later or select a different model from the top navigation menu.`, "warning");
+                         pText.innerText = "Service Unavailable";
+                    } else if (error.message.includes("429") || error.message.toLowerCase().includes("quota") || error.message.toLowerCase().includes("rate limit")) {
+                         UI.showError("API Quota Exceeded", `You have exceeded your API quota for the ${AppState.model} model. Please check your Google Cloud Console billing and rate limits.`, "warning");
+                         pText.innerText = "Quota Exceeded";
                     } else {
-                        UI.showAlert('error', 'Analysis Failed', 'An error occurred while communicating with the Gemini API.', error.message);
+                        UI.showError("Analysis Failed", error.message, "error");
                         pText.innerText = "Engine Idle";
                     }
                     
@@ -1382,10 +1370,8 @@
             },
 
             callGeminiAnalysis: async (text) => {
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${AppState.apiKey}`;
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${AppState.model}:generateContent?key=${AppState.apiKey}`;
                 
-                // Extremely strict JSON schema ensures the model formats its findings
-                // correctly to perfectly fit the UI components.
                 const jsonSchema = {
                     type: "OBJECT",
                     properties: {
@@ -1489,17 +1475,12 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
-                    signal: AnalysisEngine.abortController.signal // Link abort controller
+                    signal: AnalysisEngine.abortController.signal
                 });
 
                 if (!response.ok) {
                     const errData = await response.json();
-                    const errMsg = errData.error?.message || `HTTP ${response.status}`;
-                    const customError = new Error(errMsg);
-                    if (response.status === 429) {
-                        customError.isQuota = true;
-                    }
-                    throw customError;
+                    throw new Error(errData.error?.message || `HTTP ${response.status}`);
                 }
 
                 const data = await response.json();
@@ -1544,7 +1525,7 @@
                 if(!text) return;
 
                 if(!AppState.apiKey) {
-                    UI.showAlert('warning', 'API Key Required', 'Gemini API Key is required to utilize query capabilities. Please configure it in the top navigation bar.');
+                    ChatHandler.appendMessage('system', "Error: Gemini API Key is required to utilize query capabilities. Please configure it in the top navigation bar.");
                     return;
                 }
 
@@ -1562,9 +1543,10 @@
                     ChatHandler.appendMessage('ai', response);
                 } catch (error) {
                     document.getElementById(loadingId).remove();
-                    if(error.isQuota) {
-                        UI.showAlert('quota', 'API Quota Exceeded', 'You have exceeded your Gemini API usage limits. Please check your Google Cloud Console billing and quota settings.', error.message);
-                        ChatHandler.appendMessage('system', "Error: API Quota Exceeded.");
+                    if (error.message.includes("503") || error.message.toLowerCase().includes("high demand") || error.message.toLowerCase().includes("overloaded")) {
+                         ChatHandler.appendMessage('system', `Warning: The ${AppState.model} model is currently experiencing high demand. Please try again later or select a different model.`);
+                    } else if (error.message.includes("429") || error.message.toLowerCase().includes("quota") || error.message.toLowerCase().includes("rate limit")) {
+                         ChatHandler.appendMessage('system', `Error: API Quota Exceeded for ${AppState.model}. Please check your billing/limits.`);
                     } else {
                         ChatHandler.appendMessage('system', "Connection error or invalid API context. " + error.message);
                     }
@@ -1576,7 +1558,7 @@
 
             callGeminiChat: async (query) => {
                 const apiKey = AppState.apiKey;
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${AppState.model}:generateContent?key=${apiKey}`;
                 
                 // Construct context from both structured findings and raw document text
                 let contextText = "";
@@ -1621,12 +1603,7 @@
 
                 if (!response.ok) {
                     const errData = await response.json();
-                    const errMsg = errData.error?.message || `HTTP ${response.status}`;
-                    const customError = new Error(errMsg);
-                    if (response.status === 429) {
-                        customError.isQuota = true;
-                    }
-                    throw customError;
+                    throw new Error(errData.error?.message || `HTTP ${response.status}`);
                 }
 
                 const data = await response.json();
