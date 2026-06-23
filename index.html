@@ -1576,7 +1576,7 @@
                             items: {
                                 type: "OBJECT",
                                 properties: {
-                                    id: { type: "STRING", description: "Unique identifier following the pattern VAPT-XXX (e.g. VAPT-001)" },
+                                    id: { type: "STRING", description: "Unique identifier following the pattern VAPT-CWE-{CWE_NUMBER}-{THREE_DIGIT_SEQUENCE} (e.g. VAPT-CWE-89-001)" },
                                     title: { type: "STRING" },
                                     severity: { type: "STRING", description: "Must be: Critical, High, Medium, Low, or Informational" },
                                     cvss: { type: "STRING" },
@@ -1650,7 +1650,7 @@
                     }
                 };
 
-                const prompt = "You are a strictly professional and highly accurate cybersecurity VAPT report analyzer. Analyze the following document text and extract all vulnerabilities, compliance mappings, and remediation plans into the strictly requested JSON structure. Provide consistent, deterministic output based solely on the provided text. If details are missing, infer intelligently based on the context, but prioritize factual extraction directly from the document content. Support aggregating from multiple combined documents if applicable. IMPORTANT: Ensure that every finding has a uniquely generated ID following the exact pattern 'VAPT-XXX' (e.g., VAPT-001, VAPT-002, etc.).";
+                const prompt = "You are a strictly professional and highly accurate cybersecurity VAPT report analyzer. Analyze the following document text and extract all vulnerabilities, compliance mappings, and remediation plans into the strictly requested JSON structure. Provide consistent, deterministic output based solely on the provided text. If details are missing, infer intelligently based on the context, but prioritize factual extraction directly from the document content. Support aggregating from multiple combined documents if applicable. IMPORTANT: Ensure that every finding has a uniquely generated ID following the exact pattern 'VAPT-CWE-{CWE_NUMBER}-{THREE_DIGIT_SEQUENCE}'. Determine the most accurate Standard CWE ID for the vulnerability type. For example: SQL Injection (CWE-89) -> VAPT-CWE-89-001, Cross-Site Scripting (CWE-79) -> VAPT-CWE-79-001. Increment the 3-digit sequence for multiple findings of the same CWE.";
                 
                 const payload = {
                     generationConfig: {
