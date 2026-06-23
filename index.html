@@ -1561,7 +1561,6 @@
                         document.getElementById('pdf-page-num').disabled = false;
                         
                         for(let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-                            // Fixed: Changed 'pdf' to 'pdfDoc'
                             const page = await pdfDoc.getPage(pageNum);
                             const viewport = page.getViewport({scale: 1.5}); 
                             const canvas = document.createElement('canvas');
@@ -1645,6 +1644,27 @@
                     combinedText += `\n--- END OF DOCUMENT: ${s.name} ---\n`;
                 });
                 AppState.documentText = combinedText;
+                
+                // Heuristic Pre-Check for VAPT Report Validity
+                const lowerText = AppState.documentText.toLowerCase();
+                const vaptKeywords = ['vulnerability', 'penetration', 'cvss', 'cve', 'severity', 'remediation', 'exploit', 'owasp', 'risk', 'finding', 'nmap', 'burp', 'nessus'];
+                let matchCount = 0;
+                
+                // Check first 15,000 chars (usually covers intro/exec summary/methodology) to be efficient
+                const scanArea = lowerText.substring(0, 15000); 
+                vaptKeywords.forEach(kw => {
+                    if (scanArea.includes(kw)) matchCount++;
+                });
+
+                // Require at least 3 distinct VAPT-related keywords to proceed
+                if (matchCount < 3) {
+                    UI.showError(
+                        "Invalid Document Type Detected", 
+                        "The selected document does not appear to be a standard Vulnerability Assessment or Penetration Testing (VAPT) report. Please ensure you are uploading a valid security scan, audit report, or risk assessment.", 
+                        "warning"
+                    );
+                    return;
+                }
 
                 AppState.status = 'analyzing';
                 AnalysisEngine.abortController = new AbortController();
